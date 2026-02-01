@@ -1,14 +1,44 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hello World</title>
-  <link href='/style.css' rel='stylesheet'>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Hub</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Hello, world!</h1>
-  <button onclick="console.log('hello');">Press me</button>
-  <script defer type="text/javascript" src="/main.js"></script>
+    <header>
+        <h1>Family Hub</h1>
+        <nav>
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#lotto">Lotto</a></li>
+                <li><a href="#gallery">Gallery</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="home">
+            <h2>Welcome to our Family Hub!</h2>
+            <p>This is a place for our family to connect, share, and have fun.</p>
+        </section>
+
+        <section id="lotto">
+            <h2>Lotto Number Generator</h2>
+            <lotto-generator></lotto-generator>
+        </section>
+
+        <section id="gallery">
+            <h2>Gallery</h2>
+            <p>Coming soon...</p>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2023 Family Hub</p>
+    </footer>
+
+    <script src="main.js" type="module"></script>
 </body>
 </html>
