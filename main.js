@@ -27,6 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 l.classList.remove('active');
             }
         });
+        // Render gallery if gallery section is active
+        if (hash === 'gallery') {
+            renderGallery();
+        }
     }
 
     window.addEventListener('hashchange', handleHashChange);
@@ -134,7 +138,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const homeImage = document.getElementById('home-image');
     const removeImageButton = document.getElementById('remove-home-image');
 
-    // On page load, check for a saved image in localStorage
     const savedImage = localStorage.getItem('homeImageData');
     if (savedImage) {
         homeImage.src = savedImage;
@@ -151,7 +154,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 homeImage.src = imageDataUrl;
                 homeImage.style.display = 'block';
                 removeImageButton.style.display = 'inline-block';
-                // Save the image data to localStorage
                 localStorage.setItem('homeImageData', imageDataUrl);
             }
             reader.readAsDataURL(file);
@@ -159,13 +161,100 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     removeImageButton.addEventListener('click', function() {
-        // Clear the image
         homeImage.src = '';
         homeImage.style.display = 'none';
         removeImageButton.style.display = 'none';
-        // Remove the image from localStorage
         localStorage.removeItem('homeImageData');
-        // Reset the file input
         imageUpload.value = '';
     });
+
+    // --- Gallery ---
+    const galleryUpload = document.getElementById('gallery-upload');
+    const galleryGrid = document.getElementById('gallery-grid');
+    const galleryPagination = document.getElementById('gallery-pagination');
+    
+    let galleryImages = JSON.parse(localStorage.getItem('galleryImages')) || [];
+    let currentPage = 1;
+    const imagesPerPage = 20;
+
+    galleryUpload.addEventListener('change', function() {
+        const files = this.files;
+        if (!files.length) return;
+
+        let filesToProcess = files.length;
+
+        for (const file of files) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                galleryImages.push({
+                    id: Date.now() + Math.random(), // Simple unique ID
+                    src: e.target.result
+                });
+                filesToProcess--;
+                if (filesToProcess === 0) {
+                    saveAndRenderGallery();
+                }
+            }
+            reader.readAsDataURL(file);
+        }
+        this.value = ''; // Reset file input
+    });
+
+    function saveAndRenderGallery() {
+        localStorage.setItem('galleryImages', JSON.stringify(galleryImages));
+        renderGallery();
+    }
+    
+    function deleteImage(id) {
+        galleryImages = galleryImages.filter(img => img.id !== id);
+        saveAndRenderGallery();
+    }
+
+    function renderGallery() {
+        galleryGrid.innerHTML = '';
+        const totalPages = Math.ceil(galleryImages.length / imagesPerPage);
+        currentPage = Math.min(currentPage, totalPages) || 1;
+
+        const start = (currentPage - 1) * imagesPerPage;
+        const end = start + imagesPerPage;
+        const paginatedImages = galleryImages.slice(start, end);
+
+        paginatedImages.forEach(img => {
+            const imgContainer = document.createElement('div');
+            imgContainer.className = 'gallery-item';
+            
+            const imageEl = document.createElement('img');
+            imageEl.src = img.src;
+            
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'delete-gallery-image';
+            deleteButton.textContent = 'X';
+            deleteButton.onclick = () => deleteImage(img.id);
+            
+            imgContainer.appendChild(imageEl);
+            imgContainer.appendChild(deleteButton);
+            galleryGrid.appendChild(imgContainer);
+        });
+        
+        renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+        galleryPagination.innerHTML = '';
+        if (totalPages <= 1) return;
+
+        for (let i = 1; i <= totalPages; i++) {
+            const pageButton = document.createElement('button');
+            pageButton.textContent = i;
+            pageButton.className = 'page-button';
+            if (i === currentPage) {
+                pageButton.classList.add('active');
+            }
+            pageButton.onclick = () => {
+                currentPage = i;
+                renderGallery();
+            };
+            galleryPagination.appendChild(pageButton);
+        }
+    }
 });

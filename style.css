@@ -242,7 +242,7 @@ footer {
     border-radius: 5px;
     background-color: var(--bg-color);
     color: var(--text-color);
-    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    box-sizing: border-box;
     transition: border-color 0.3s, background-color 0.3s;
 }
 
@@ -306,7 +306,7 @@ footer {
 }
 
 #remove-home-image {
-    background-color: #dc3545; /* A standard red for removal/danger */
+    background-color: #dc3545;
     color: white;
     border: none;
     padding: 10px 15px;
@@ -318,4 +318,85 @@ footer {
 
 #remove-home-image:hover {
     background-color: #c82333;
+}
+
+/* Gallery Styles */
+.gallery-controls {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+#gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.gallery-item {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.gallery-item:hover img {
+    transform: scale(1.05);
+}
+
+.delete-gallery-image {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: rgba(220, 53, 69, 0.8);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    text-align: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.gallery-item:hover .delete-gallery-image {
+    opacity: 1;
+}
+
+#gallery-pagination {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.page-button {
+    background-color: var(--section-bg);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    margin: 0 5px;
+}
+
+.page-button:hover {
+    background-color: var(--primary-color);
+    color: var(--primary-text-color);
+}
+
+.page-button.active {
+    background-color: var(--primary-color);
+    color: var(--primary-text-color);
+    cursor: default;
 }

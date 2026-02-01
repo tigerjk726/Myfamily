@@ -39,17 +39,17 @@
             <h2>Lotto Number Generator</h2>
             <div id="lotto-controls">
                 <div class="lotto-group">
-                    <h3>🇰🇷 한국 로또</h3>
-                    <button class="lotto-button" data-lotto-type="korea-645">동행복권 6/45</button>
-                    <button class="lotto-button" data-lotto-type="korea-720">연금복권 720+</button>
+                    <h3>🇰🇷 Korea Lotto</h3>
+                    <button class="lotto-button" data-lotto-type="korea-645">Lottery 6/45</button>
+                    <button class="lotto-button" data-lotto-type="korea-720">Pension Lottery 720+</button>
                 </div>
                 <div class="lotto-group">
-                    <h3>🇺🇸 미국 로또</h3>
+                    <h3>🇺🇸 USA Lotto</h3>
                     <button class="lotto-button" data-lotto-type="usa-powerball">Powerball</button>
                     <button class="lotto-button" data-lotto-type="usa-megamillions">Mega Millions</button>
                 </div>
                 <div class="lotto-group">
-                    <h3>🇨🇦 캐나다 로또</h3>
+                    <h3>🇨🇦 Canada Lotto</h3>
                     <button class="lotto-button" data-lotto-type="canada-649">Lotto 6/49</button>
                     <button class="lotto-button" data-lotto-type="canada-lottomax">Lotto MAX</button>
                 </div>
@@ -61,26 +61,31 @@
 
         <section id="gallery">
             <h2>Gallery</h2>
-            <p>Coming soon...</p>
+            <div class="gallery-controls">
+                <label for="gallery-upload" class="custom-file-upload">Add Photos</label>
+                <input type="file" id="gallery-upload" accept="image/*" multiple style="display: none;"/>
+            </div>
+            <div id="gallery-grid"></div>
+            <div id="gallery-pagination"></div>
         </section>
 
         <section id="contact">
-            <h2>제휴 문의</h2>
-            <p>문의사항이 있으시면 아래 양식을 작성해 주세요. Formspree를 통해 안전하게 메시지가 전송됩니다.</p>
+            <h2>Partnership Inquiry</h2>
+            <p>If you have any questions, please fill out the form below. Your message will be sent securely via Formspree.</p>
             <form action="https://formspree.io/f/xjgowyzz" method="POST" id="partnership-form">
                 <div class="form-group">
-                    <label for="name">이름:</label>
+                    <label for="name">Name:</label>
                     <input type="text" id="name" name="name" required>
                 </div>
                 <div class="form-group">
-                    <label for="email">이메일:</label>
+                    <label for="email">Email:</label>
                     <input type="email" id="email" name="email" required>
                 </div>
                 <div class="form-group">
-                    <label for="message">메시지:</label>
+                    <label for="message">Message:</label>
                     <textarea id="message" name="message" rows="5" required></textarea>
                 </div>
-                <button type="submit">문의하기</button>
+                <button type="submit">Submit</button>
             </form>
         </section>
 
