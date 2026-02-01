@@ -26,12 +26,7 @@
             <h2>Welcome to our Family Hub!</h2>
             <p>This is a place for our family to connect, share, and have fun.</p>
             <div id="home-image-container">
-                <img id="home-image" src="" alt="User uploaded image" style="display: none;"/>
-            </div>
-            <div class="home-image-controls">
-                <label for="home-image-upload" class="custom-file-upload">Upload Image</label>
-                <input type="file" id="home-image-upload" accept="image/*" style="display: none;"/>
-                <button id="remove-home-image" style="display: none;">Remove Image</button>
+                <img id="home-image" src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Beautiful landscape" />
             </div>
         </section>
 
@@ -61,12 +56,16 @@
 
         <section id="gallery">
             <h2>Gallery</h2>
-            <div class="gallery-controls">
-                <label for="gallery-upload" class="custom-file-upload">Add Photos</label>
-                <input type="file" id="gallery-upload" accept="image/*" multiple style="display: none;"/>
+            <div id="gallery-grid">
+                <!-- To add images to the gallery: -->
+                <!-- 1. Create a folder named 'gallery-images' in the project root. -->
+                <!-- 2. Place your image files (e.g., family.jpg, vacation.png) inside the 'gallery-images' folder. -->
+                <!-- 3. Add an <img> tag for each image here, like: -->
+                <!-- <div class="gallery-item"><img src="gallery-images/family.jpg" alt="Family Photo"></div> -->
+                <!-- <div class="gallery-item"><img src="gallery-images/vacation.png" alt="Vacation Fun"></div> -->
+                <!-- Images added this way will be part of the project and uploaded to GitHub. -->
+                <p>No images in gallery yet. Please add your family photos by following the instructions in the source code.</p>
             </div>
-            <div id="gallery-grid"></div>
-            <div id="gallery-pagination"></div>
         </section>
 
         <section id="contact">
