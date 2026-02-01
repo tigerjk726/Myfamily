@@ -121,8 +121,8 @@ h2 {
 footer {
     text-align: center;
     padding: 20px;
-    background: #333;
-    color: #fff;
+    background: #333; /* Footer background remains dark */
+    color: #fff; /* Footer text remains white */
     position: relative;
     bottom: 0;
     width: 100%;
@@ -211,3 +211,62 @@ footer {
     font-weight: bold;
     color: var(--primary-color);
 }
+
+/* Contact Form Section */
+#partnership-form {
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 20px;
+    background: var(--section-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--text-color);
+    border-radius: 5px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    transition: border-color 0.3s, background-color 0.3s;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="email"]:focus,
+.form-group textarea:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+#partnership-form button[type="submit"] {
+    background-color: var(--primary-color);
+    color: var(--primary-text-color);
+    border: none;
+    padding: 12px 20px;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    width: 100%;
+}
+
+#partnership-form button[type="submit"]:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
+

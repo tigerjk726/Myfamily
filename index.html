@@ -53,6 +53,29 @@
             <h2>Gallery</h2>
             <p>Coming soon...</p>
         </section>
+
+        <section id="contact">
+            <h2>제휴 문의</h2>
+            <p>문의사항이 있으시면 아래 양식을 작성해 주세요. Formspree를 통해 안전하게 메시지가 전송됩니다.</p>
+            <form action="https://formspree.io/f/your_form_id" method="POST" id="partnership-form">
+                <div class="form-group">
+                    <label for="name">이름:</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">이메일:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="message">메시지:</label>
+                    <textarea id="message" name="message" rows="5" required></textarea>
+                </div>
+                <button type="submit">문의하기</button>
+            </form>
+            <p style="font-size: 0.9em; margin-top: 15px;">
+                <strong>중요:</strong> 이 폼을 사용하려면 Formspree.io에서 새 폼을 생성하고 'your_form_id' 부분을 실제 Formspree 폼 엔드포인트 URL로 교체해야 합니다.
+            </p>
+        </section>
     </main>
 
     <footer>
