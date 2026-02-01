@@ -16,6 +16,7 @@
                 <li><a href="#gallery">Gallery</a></li>
             </ul>
         </nav>
+        <button id="theme-toggle">🌙</button>
     </header>
 
     <main>
@@ -26,7 +27,26 @@
 
         <section id="lotto">
             <h2>Lotto Number Generator</h2>
-            <lotto-generator></lotto-generator>
+            <div id="lotto-controls">
+                <div class="lotto-group">
+                    <h3>🇰🇷 한국 로또</h3>
+                    <button class="lotto-button" data-lotto-type="korea-645">동행복권 6/45</button>
+                    <button class="lotto-button" data-lotto-type="korea-720">연금복권 720+</button>
+                </div>
+                <div class="lotto-group">
+                    <h3>🇺🇸 미국 로또</h3>
+                    <button class="lotto-button" data-lotto-type="usa-powerball">Powerball</button>
+                    <button class="lotto-button" data-lotto-type="usa-megamillions">Mega Millions</button>
+                </div>
+                <div class="lotto-group">
+                    <h3>🇨🇦 캐나다 로또</h3>
+                    <button class="lotto-button" data-lotto-type="canada-649">Lotto 6/49</button>
+                    <button class="lotto-button" data-lotto-type="canada-lottomax">Lotto MAX</button>
+                </div>
+            </div>
+            <div id="lotto-display-area">
+                <p>Click a lottery button to generate numbers.</p>
+            </div>
         </section>
 
         <section id="gallery">
