@@ -270,3 +270,52 @@ footer {
     transform: translateY(-2px);
 }
 
+/* Home Image Upload Styles */
+#home-image-container {
+    margin: 20px 0;
+    text-align: center;
+}
+
+#home-image {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+.home-image-controls {
+    text-align: center;
+    margin-top: 10px;
+}
+
+.custom-file-upload {
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: var(--primary-text-color);
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-right: 10px;
+}
+
+.custom-file-upload:hover {
+    opacity: 0.9;
+}
+
+#remove-home-image {
+    background-color: #dc3545; /* A standard red for removal/danger */
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#remove-home-image:hover {
+    background-color: #c82333;
+}

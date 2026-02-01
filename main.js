@@ -128,4 +128,44 @@ document.addEventListener('DOMContentLoaded', () => {
         if (number <= 40) return '#aaa';    // Gray
         return '#b0d840';                   // Green
     }
+
+    // --- Home Image Upload ---
+    const imageUpload = document.getElementById('home-image-upload');
+    const homeImage = document.getElementById('home-image');
+    const removeImageButton = document.getElementById('remove-home-image');
+
+    // On page load, check for a saved image in localStorage
+    const savedImage = localStorage.getItem('homeImageData');
+    if (savedImage) {
+        homeImage.src = savedImage;
+        homeImage.style.display = 'block';
+        removeImageButton.style.display = 'inline-block';
+    }
+
+    imageUpload.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageDataUrl = e.target.result;
+                homeImage.src = imageDataUrl;
+                homeImage.style.display = 'block';
+                removeImageButton.style.display = 'inline-block';
+                // Save the image data to localStorage
+                localStorage.setItem('homeImageData', imageDataUrl);
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    removeImageButton.addEventListener('click', function() {
+        // Clear the image
+        homeImage.src = '';
+        homeImage.style.display = 'none';
+        removeImageButton.style.display = 'none';
+        // Remove the image from localStorage
+        localStorage.removeItem('homeImageData');
+        // Reset the file input
+        imageUpload.value = '';
+    });
 });
