@@ -321,9 +321,25 @@ footer {
 }
 
 /* Gallery Styles */
-.gallery-controls {
+#gallery-upload-controls {
     text-align: center;
     margin-bottom: 20px;
+}
+
+#upload-image-button {
+    background-color: var(--primary-color);
+    color: var(--primary-text-color);
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+#upload-image-button:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
 }
 
 #gallery-grid {
@@ -338,11 +354,12 @@ footer {
     overflow: hidden;
     border-radius: 8px;
     box-shadow: 0 2px 4px var(--shadow-color);
+    background-color: var(--section-bg); /* Ensure background is consistent */
 }
 
 .gallery-item img {
     width: 100%;
-    height: 100%;
+    height: 150px; /* Fixed height for gallery items */
     object-fit: cover;
     display: block;
     transition: transform 0.3s ease;
@@ -400,3 +417,4 @@ footer {
     color: var(--primary-text-color);
     cursor: default;
 }
+

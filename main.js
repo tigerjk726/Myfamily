@@ -133,4 +133,134 @@ document.addEventListener('DOMContentLoaded', () => {
         return '#b0d840';                   // Green
     }
 
+    // --- Gallery Logic (Image Upload and IndexedDB Persistence) ---
+    const DB_NAME = 'FamilyHubGallery';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'images';
+
+    let db;
+
+    function openDatabase() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+            request.onupgradeneeded = (event) => {
+                db = event.target.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                }
+            };
+
+            request.onsuccess = (event) => {
+                db = event.target.result;
+                resolve(db);
+            };
+
+            request.onerror = (event) => {
+                console.error("IndexedDB error:", event.target.errorCode);
+                reject(event.target.errorCode);
+            };
+        });
+    }
+
+    async function saveImage(imageBlob) {
+        if (!db) await openDatabase();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const timestamp = new Date().getTime(); // Unique ID for each image
+            const request = store.add({ blob: imageBlob, timestamp: timestamp });
+
+            request.onsuccess = () => {
+                resolve();
+            };
+
+            request.onerror = (event) => {
+                console.error("Error saving image:", event.target.error);
+                reject(event.target.error);
+            };
+        });
+    }
+
+    async function getImages() {
+        if (!db) await openDatabase();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([STORE_NAME], 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                resolve(request.result);
+            };
+
+            request.onerror = (event) => {
+                console.error("Error getting images:", event.target.error);
+                reject(event.target.error);
+            };
+        });
+    }
+
+    const imageUploadInput = document.getElementById('image-upload-input');
+    const uploadImageButton = document.getElementById('upload-image-button');
+    const galleryGrid = document.getElementById('gallery-grid');
+
+    uploadImageButton.addEventListener('click', () => {
+        imageUploadInput.click();
+    });
+
+    imageUploadInput.addEventListener('change', async (event) => {
+        const files = event.target.files;
+        if (!files.length) return;
+
+        for (const file of files) {
+            if (!file.type.startsWith('image/')) {
+                console.warn('Skipping non-image file:', file.name);
+                continue;
+            }
+            try {
+                // Read file as Blob and save
+                await saveImage(file);
+            } catch (error) {
+                console.error('Failed to save image:', file.name, error);
+            }
+        }
+        imageUploadInput.value = ''; // Clear input for next upload
+        renderGallery(); // Re-render gallery after upload
+    });
+
+    async function renderGallery() {
+        galleryGrid.innerHTML = ''; // Clear current gallery
+        const imagesData = await getImages();
+
+        if (imagesData.length === 0) {
+            galleryGrid.innerHTML = '<p>No images in gallery yet. Upload some photos!</p>';
+            return;
+        }
+
+        // Sort by timestamp (newest first)
+        imagesData.sort((a, b) => b.timestamp - a.timestamp);
+
+        imagesData.forEach(imageData => {
+            const imgBlob = imageData.blob;
+            const imgUrl = URL.createObjectURL(imgBlob);
+
+            const galleryItem = document.createElement('div');
+            galleryItem.classList.add('gallery-item');
+
+            const img = document.createElement('img');
+            img.src = imgUrl;
+            img.alt = 'Family Photo'; // Consider adding a way to get actual alt text later
+
+            galleryItem.appendChild(img);
+            galleryGrid.appendChild(galleryItem);
+        });
+    }
+
+    // Initialize IndexedDB and render gallery on page load
+    openDatabase().then(() => {
+        if (window.location.hash.substring(1) === 'gallery') {
+            renderGallery();
+        }
+    });
+
 });

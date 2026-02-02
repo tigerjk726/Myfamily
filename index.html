@@ -56,15 +56,12 @@
 
         <section id="gallery">
             <h2>Gallery</h2>
+            <div id="gallery-upload-controls">
+                <input type="file" id="image-upload-input" accept="image/*" multiple style="display: none;">
+                <button id="upload-image-button">Upload Photo(s)</button>
+            </div>
             <div id="gallery-grid">
-                <!-- To add images to the gallery: -->
-                <!-- 1. Create a folder named 'gallery-images' in the project root. -->
-                <!-- 2. Place your image files (e.g., family.jpg, vacation.png) inside the 'gallery-images' folder. -->
-                <!-- 3. Add an <img> tag for each image here, like: -->
-                <!-- <div class="gallery-item"><img src="gallery-images/family.jpg" alt="Family Photo"></div> -->
-                <!-- <div class="gallery-item"><img src="gallery-images/vacation.png" alt="Vacation Fun"></div> -->
-                <!-- Images added this way will be part of the project and uploaded to GitHub. -->
-                <p>No images in gallery yet. Please add your family photos by following the instructions in the source code.</p>
+                <!-- Images will be loaded here dynamically -->
             </div>
         </section>
 
