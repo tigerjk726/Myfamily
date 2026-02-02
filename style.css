@@ -179,11 +179,12 @@ h2 {
     align-items: center;
 }
 
-.lotto-numbers {
+.lotto-numbers-container { /* Renamed from .lotto-numbers */
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     justify-content: center;
+    align-items: center;
 }
 
 .number-ball {
@@ -197,6 +198,30 @@ h2 {
     font-weight: bold;
     color: white;
     box-shadow: inset -2px -2px 5px rgba(0,0,0,0.3);
+}
+
+.pension-lotto-group {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-right: 15px;
+    padding: 10px 15px;
+    border: 2px solid var(--primary-color);
+    border-radius: 8px;
+    background-color: var(--card-background);
+}
+
+.pension-lotto-digits {
+    display: flex;
+    gap: 5px;
+}
+
+.pension-digit-ball {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+    background-color: var(--secondary-color); /* Distinct color for pension digits */
+    box-shadow: inset -1px -1px 3px rgba(0,0,0,0.2);
 }
 
 /* Contact Form */
