@@ -91,9 +91,6 @@
         <section id="comments">
             <h2>Comments</h2>
             <div id="disqus_thread"></div>
-            <p style="font-size: 0.9em; margin-top: 15px;">
-                <strong>중요:</strong> 댓글 기능을 사용하려면 Disqus.com에서 사이트를 등록하고 스크립트 내 'myfamily-3' 부분을 실제 Disqus shortname으로 교체해야 합니다. 현재 'myfamily-3'은 플레이스홀더입니다.
-            </p>
         </section>
     </main>
 
@@ -104,6 +101,17 @@
     <script id="dsq-count-scr" src="//myfamily-3.disqus.com/count.js" async></script>
     <script src="main.js" type="module"></script>
     <script>
+    var disqus_config = function () {
+    this.page.url = "https://4ce8d94b.myfamily-dxv.pages.dev/";
+    this.page.identifier = "myfamily-3";
+    };
+    
+    (function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = 'https://myfamily-3.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+    })();
         const images = [
             "https://10wallpaper.com/wallpaper/medium/1510/Yosemite_National_Park-October_2015_Bing_Wallpaper_medium.jpg",
             "https://10wallpaper.com/wallpaper/medium/1510/Water_droplets-October_2015_Bing_Wallpaper_medium.jpg",

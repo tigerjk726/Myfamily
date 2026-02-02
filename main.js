@@ -1,11 +1,27 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Navigation ---
+    // Theme Toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        if (currentTheme === 'dark') {
+            document.documentElement.removeAttribute('data-theme');
+            themeToggle.textContent = '🌙';
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            themeToggle.textContent = '☀️';
+        }
+    });
+
+    // Navigation
     const links = document.querySelectorAll('nav a');
     const sections = document.querySelectorAll('main section');
 
     function showSection(id) {
         sections.forEach(section => {
-            section.style.display = section.id === id ? 'block' : 'none';
+            section.classList.remove('active');
+            if (section.id === id) {
+                section.classList.add('active');
+            }
         });
     }
 
@@ -21,246 +37,117 @@ document.addEventListener('DOMContentLoaded', () => {
         const hash = window.location.hash.substring(1) || 'home';
         showSection(hash);
         links.forEach(l => {
+            l.classList.remove('active');
             if (l.getAttribute('href').substring(1) === hash) {
                 l.classList.add('active');
-            } else {
-                l.classList.remove('active');
             }
         });
-        // Render gallery if gallery section is active
-        if (hash === 'gallery') {
-            renderGallery();
-        }
     }
 
     window.addEventListener('hashchange', handleHashChange);
     handleHashChange(); // Initial load
 
-    // --- Theme Toggle ---
-    const themeToggle = document.getElementById('theme-toggle');
-    const body = document.body;
+    // --- Lottery Generator ---
+    const lottoButtons = document.querySelectorAll('.lotto-button');
+    const lottoDisplay = document.getElementById('lotto-display-area');
 
-    // On load, check for saved theme
-    if (localStorage.getItem('theme') === 'dark') {
-        body.classList.add('dark-mode');
-        themeToggle.textContent = '☀️';
-    }
-
-    themeToggle.addEventListener('click', () => {
-        body.classList.toggle('dark-mode');
-        if (body.classList.contains('dark-mode')) {
-            themeToggle.textContent = '☀️';
-            localStorage.setItem('theme', 'dark');
-        } else {
-            themeToggle.textContent = '🌙';
-            localStorage.setItem('theme', 'light');
-        }
+    lottoButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const type = button.dataset.lottoType;
+            const numbers = generateLottoNumbers(type);
+            displayLottoNumbers(numbers, type);
+        });
     });
 
-    // --- Lotto Generator ---
-    const lottoControls = document.getElementById('lotto-controls');
-    const displayArea = document.getElementById('lotto-display-area');
-
-    lottoControls.addEventListener('click', (e) => {
-        if (e.target.classList.contains('lotto-button')) {
-            const type = e.target.dataset.lottoType;
-            generateAndDisplayNumbers(type);
-        }
-    });
-
-    function generateAndDisplayNumbers(type) {
-        let numbersHtml = '';
-        let generatedNumbers;
-
+    function generateLottoNumbers(type) {
+        let balls = [];
         switch (type) {
             case 'korea-645':
-                generatedNumbers = generateUniqueNumbers(6, 1, 45);
-                numbersHtml = createNumberBalls(generatedNumbers);
+                balls = [{ count: 6, max: 45, color: '#fbc400' }];
                 break;
             case 'korea-720':
+                // 1 group of 1-9, 5 groups of 0-9
                 const group = Math.floor(Math.random() * 5) + 1;
-                const digits = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10)).join('');
-                numbersHtml = `<div class="number-set"><h3>${group}조 ${digits}</h3></div>`;
-                break;
+                let rest = generateUniqueNumbers(6, 0, 9).join('');
+                return { type: 'structured', numbers: [group, ...rest.split('')] };
             case 'usa-powerball':
-                const powerballMain = generateUniqueNumbers(5, 1, 69);
-                const powerballNum = generateUniqueNumbers(1, 1, 26);
-                numbersHtml = createNumberBalls(powerballMain) +
-                              '<div class="separator">+</div>' +
-                              createNumberBalls(powerballNum, true);
+                balls = [
+                    { count: 5, max: 69, color: '#fff', textColor: '#d92a2a' },
+                    { count: 1, max: 26, color: '#d92a2a', textColor: '#fff' }
+                ];
                 break;
             case 'usa-megamillions':
-                const megaMain = generateUniqueNumbers(5, 1, 70);
-                const megaNum = generateUniqueNumbers(1, 1, 25);
-                numbersHtml = createNumberBalls(megaMain) +
-                              '<div class="separator">+</div>' +
-                              createNumberBalls(megaNum, true);
+                balls = [
+                    { count: 5, max: 70, color: '#fff', textColor: '#fbc400' },
+                    { count: 1, max: 25, color: '#fbc400', textColor: '#fff' }
+                ];
                 break;
             case 'canada-649':
-                generatedNumbers = generateUniqueNumbers(6, 1, 49);
-                numbersHtml = createNumberBalls(generatedNumbers);
+                balls = [{ count: 6, max: 49, color: '#d92a2a' }];
                 break;
             case 'canada-lottomax':
-                generatedNumbers = generateUniqueNumbers(7, 1, 50);
-                numbersHtml = createNumberBalls(generatedNumbers);
+                balls = [{ count: 7, max: 50, color: '#007bff' }];
                 break;
         }
 
-        displayArea.innerHTML = `<div class="numbers">${numbersHtml}</div>`;
+        const generated = balls.map(b => generateUniqueNumbers(b.count, 1, b.max, b.color, b.textColor));
+        return { type: 'balls', numbers: generated.flat() };
     }
-    
-    function generateUniqueNumbers(count, min, max) {
-        const numbers = new Set();
+
+    function generateUniqueNumbers(count, min, max, color, textColor) {
+        let numbers = new Set();
         while (numbers.size < count) {
-            const randomNumber = Math.floor(Math.random() * (max - min + 1)) + min;
-            numbers.add(randomNumber);
+            numbers.add(Math.floor(Math.random() * (max - min + 1)) + min);
         }
-        return Array.from(numbers).sort((a, b) => a - b);
+        return Array.from(numbers).sort((a, b) => a - b).map(n => ({ val: n, color, textColor }));
     }
 
-    function createNumberBalls(numbers, isSpecial = false) {
-        return numbers.map(number => {
-            const color = isSpecial ? '#ff7272' : getNumberColor(number);
-            return `<div class="number" style="background-color: ${color};">${number}</div>`;
-        }).join('');
-    }
+    function displayLottoNumbers(result, type) {
+        lottoDisplay.innerHTML = '';
+        const container = document.createElement('div');
+        container.className = 'lotto-numbers';
 
-    function getNumberColor(number) {
-        if (number <= 10) return '#fbc400'; // Yellow
-        if (number <= 20) return '#69c8f2'; // Blue
-        if (number <= 30) return '#ff7272'; // Red
-        if (number <= 40) return '#aaa';    // Gray
-        return '#b0d840';                   // Green
-    }
-
-    // --- Gallery Logic (Image Upload and IndexedDB Persistence) ---
-    const DB_NAME = 'FamilyHubGallery';
-    const DB_VERSION = 1;
-    const STORE_NAME = 'images';
-
-    let db;
-
-    function openDatabase() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-            request.onupgradeneeded = (event) => {
-                db = event.target.result;
-                if (!db.objectStoreNames.contains(STORE_NAME)) {
-                    db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+        if (result.type === 'structured') {
+            // Special display for Korean Pension Lottery
+            container.innerHTML = `<strong>조:</strong> ${result.numbers[0]} <strong>각자리:</strong> ${result.numbers.slice(1).join(' ')}`;
+        } else { // type === 'balls'
+            result.numbers.forEach(num => {
+                const ball = document.createElement('div');
+                ball.className = 'number-ball';
+                ball.textContent = num.val;
+                ball.style.backgroundColor = num.color || '#ddd';
+                ball.style.color = num.textColor || '#333';
+                // Adjust text color for white balls in dark mode
+                if (document.documentElement.getAttribute('data-theme') === 'dark' && num.color === '#fff') {
+                    ball.style.color = '#1e1e1e';
                 }
-            };
-
-            request.onsuccess = (event) => {
-                db = event.target.result;
-                resolve(db);
-            };
-
-            request.onerror = (event) => {
-                console.error("IndexedDB error:", event.target.errorCode);
-                reject(event.target.errorCode);
-            };
-        });
+                container.appendChild(ball);
+            });
+        }
+        lottoDisplay.appendChild(container);
     }
 
-    async function saveImage(imageBlob) {
-        if (!db) await openDatabase();
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction([STORE_NAME], 'readwrite');
-            const store = transaction.objectStore(STORE_NAME);
-            const timestamp = new Date().getTime(); // Unique ID for each image
-            const request = store.add({ blob: imageBlob, timestamp: timestamp });
-
-            request.onsuccess = () => {
-                resolve();
-            };
-
-            request.onerror = (event) => {
-                console.error("Error saving image:", event.target.error);
-                reject(event.target.error);
-            };
-        });
-    }
-
-    async function getImages() {
-        if (!db) await openDatabase();
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction([STORE_NAME], 'readonly');
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.getAll();
-
-            request.onsuccess = () => {
-                resolve(request.result);
-            };
-
-            request.onerror = (event) => {
-                console.error("Error getting images:", event.target.error);
-                reject(event.target.error);
-            };
-        });
-    }
-
-    const imageUploadInput = document.getElementById('image-upload-input');
-    const uploadImageButton = document.getElementById('upload-image-button');
+    // --- Gallery --- (Simplified for now)
+    const uploadButton = document.getElementById('upload-image-button');
+    const imageInput = document.getElementById('image-upload-input');
     const galleryGrid = document.getElementById('gallery-grid');
 
-    uploadImageButton.addEventListener('click', () => {
-        imageUploadInput.click();
-    });
+    uploadButton.addEventListener('click', () => imageInput.click());
 
-    imageUploadInput.addEventListener('change', async (event) => {
-        const files = event.target.files;
-        if (!files.length) return;
-
-        for (const file of files) {
-            if (!file.type.startsWith('image/')) {
-                console.warn('Skipping non-image file:', file.name);
-                continue;
-            }
-            try {
-                // Read file as Blob and save
-                await saveImage(file);
-            } catch (error) {
-                console.error('Failed to save image:', file.name, error);
-            }
-        }
-        imageUploadInput.value = ''; // Clear input for next upload
-        renderGallery(); // Re-render gallery after upload
-    });
-
-    async function renderGallery() {
-        galleryGrid.innerHTML = ''; // Clear current gallery
-        const imagesData = await getImages();
-
-        if (imagesData.length === 0) {
-            galleryGrid.innerHTML = '<p>No images in gallery yet. Upload some photos!</p>';
-            return;
-        }
-
-        // Sort by timestamp (newest first)
-        imagesData.sort((a, b) => b.timestamp - a.timestamp);
-
-        imagesData.forEach(imageData => {
-            const imgBlob = imageData.blob;
-            const imgUrl = URL.createObjectURL(imgBlob);
-
-            const galleryItem = document.createElement('div');
-            galleryItem.classList.add('gallery-item');
-
-            const img = document.createElement('img');
-            img.src = imgUrl;
-            img.alt = 'Family Photo'; // Consider adding a way to get actual alt text later
-
-            galleryItem.appendChild(img);
-            galleryGrid.appendChild(galleryItem);
-        });
-    }
-
-    // Initialize IndexedDB and render gallery on page load
-    openDatabase().then(() => {
-        if (window.location.hash.substring(1) === 'gallery') {
-            renderGallery();
+    imageInput.addEventListener('change', (e) => {
+        if (e.target.files) {
+            Array.from(e.target.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const galleryItem = document.createElement('div');
+                    galleryItem.className = 'gallery-item';
+                    const img = document.createElement('img');
+                    img.src = event.target.result;
+                    galleryItem.appendChild(img);
+                    galleryGrid.appendChild(galleryItem);
+                }
+                reader.readAsDataURL(file);
+            });
         }
     });
-
 });
