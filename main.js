@@ -81,26 +81,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 balls = [{ count: 6, max: 45, color: '#fbc400' }];
                 break;
             case 'korea-720':
+                // 1 group of 1-9, 5 groups of 0-9
                 const group = Math.floor(Math.random() * 5) + 1;
-                let rest = generateUniqueNumbers(6, 0, 9).map(n => n.val).join('');
+                let rest = generateUniqueNumbers(6, 0, 9).map(n => n.val).join(''); // Extract only val
                 return { type: 'structured', numbers: [group, ...rest.split('')] };
             case 'usa-powerball':
                 balls = [
-                    { count: 5, max: 69, color: '#fff', textColor: '#d92a2a' },
-                    { count: 1, max: 26, color: '#d92a2a', textColor: '#fff' }
+                    { count: 5, max: 69, color: '#e44d26', textColor: '#fff' }, // Red for main numbers
+                    { count: 1, max: 26, color: '#fbc400', textColor: '#fff' }  // Yellow for Powerball
                 ];
                 break;
             case 'usa-megamillions':
                 balls = [
-                    { count: 5, max: 70, color: '#fff', textColor: '#fbc400' },
-                    { count: 1, max: 25, color: '#fbc400', textColor: '#fff' }
+                    { count: 5, max: 70, color: '#2c3e50', textColor: '#fff' }, // Dark blue for main numbers
+                    { count: 1, max: 25, color: '#fbc400', textColor: '#fff' }  // Yellow for Mega Ball
                 ];
                 break;
             case 'canada-649':
-                balls = [{ count: 6, max: 49, color: '#d92a2a' }];
+                balls = [{ count: 6, max: 49, color: '#5cb85c', textColor: '#fff' }]; // Green
                 break;
             case 'canada-lottomax':
-                balls = [{ count: 7, max: 50, color: '#007bff' }];
+                balls = [{ count: 7, max: 50, color: '#5bc0de', textColor: '#fff' }]; // Light Blue
                 break;
         }
 
@@ -119,11 +120,25 @@ document.addEventListener('DOMContentLoaded', () => {
     function displayLottoNumbers(result, type) {
         lottoDisplay.innerHTML = '';
         const container = document.createElement('div');
-        container.className = 'lotto-numbers';
+        container.className = 'lotto-numbers-container';
 
         if (result.type === 'structured') {
-            container.innerHTML = `<strong>조:</strong> ${result.numbers[0]} <strong>각자리:</strong> ${result.numbers.slice(1).join(' ')}`;
-        } else {
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'pension-lotto-group';
+            groupDiv.innerHTML = `<strong>${result.numbers[0]}조</strong>`;
+            container.appendChild(groupDiv);
+
+            const digitsDiv = document.createElement('div');
+            digitsDiv.className = 'pension-lotto-digits';
+            result.numbers.slice(1).forEach(digit => {
+                const digitSpan = document.createElement('span');
+                digitSpan.className = 'number-ball pension-digit-ball';
+                digitSpan.textContent = digit;
+                digitsDiv.appendChild(digitSpan);
+            });
+            container.appendChild(digitsDiv);
+
+        } else { // type === 'balls'
             result.numbers.forEach(num => {
                 const ball = document.createElement('div');
                 ball.className = 'number-ball';
@@ -170,9 +185,9 @@ document.addEventListener('DOMContentLoaded', () => {
         img.src = url;
         galleryItem.appendChild(img);
         if (append) {
-            galleryGrid.appendChild(galleryItem); // Append for initial load
+            galleryGrid.appendChild(galleryItem);
         } else {
-            galleryGrid.prepend(galleryItem); // Prepend for new uploads
+            galleryGrid.prepend(galleryItem);
         }
     }
 
@@ -189,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const sortedItems = res.items.sort((a, b) => b.name.localeCompare(a.name));
             sortedItems.forEach(itemRef => {
                 itemRef.getDownloadURL().then(url => {
-                    displayImage(url, true); // Append all on initial load
+                    displayImage(url, true);
                 });
             });
         }).catch(error => {
