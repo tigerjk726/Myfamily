@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- Firebase Config ---
     const firebaseConfig = {
@@ -9,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appId: "1:1043656805377:web:902d6f8dc9dcbb95be4400"
     };
     firebase.initializeApp(firebaseConfig);
-    const storage = firebase.storage();
+    const db = firebase.firestore(); // Use Firestore
 
     // Theme Toggle
     const themeToggle = document.getElementById('theme-toggle');
@@ -45,6 +46,66 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    let calendar; // To hold the calendar instance
+
+    function initializeCalendar() {
+        const calendarEl = document.getElementById('calendar-container');
+        if (!calendarEl || calendar) { // If no element or calendar is already initialized
+             return;
+        }
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            editable: true,
+            dateClick: function(info) {
+                const title = prompt('Enter event title:');
+                if (title) {
+                    db.collection('events').add({
+                        title: title,
+                        start: info.dateStr,
+                        allDay: true
+                    }).catch(error => console.error("Error adding event: ", error));
+                }
+            },
+            eventClick: function(info) {
+                if (confirm(`Delete event ''''' + info.event.title + '''''?`)) {
+                    // We need the document ID to delete it. Let's store it in extendedProps.
+                    const eventDocId = info.event.extendedProps.docId;
+                    if(eventDocId){
+                        db.collection('events').doc(eventDocId).delete()
+                        .catch(error => console.error("Error deleting event: ", error));
+                    } else {
+                        console.error("Cannot delete event without a document ID.");
+                    }
+                }
+            }
+        });
+
+        // Load events from Firestore and listen for real-time updates
+        db.collection('events').onSnapshot(snapshot => {
+            const events = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                events.push({
+                    docId: doc.id, // Store doc id for deletion
+                    title: data.title,
+                    start: data.start,
+                    allDay: data.allDay
+                });
+            });
+            if(calendar){
+                calendar.removeAllEvents(); // Clear old events
+                calendar.addEventSource(events); // Add new events
+            }
+        });
+
+        calendar.render();
+    }
+
     function handleHashChange() {
         const hash = window.location.hash.substring(1) || 'home';
         showSection(hash);
@@ -54,15 +115,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 l.classList.add('active');
             }
         });
-        if (hash === 'gallery') {
-            loadImages();
+        if (hash === 'calendar') {
+            // Use a slight delay to ensure the section is visible before rendering
+            setTimeout(initializeCalendar, 0);
         }
     }
 
     window.addEventListener('hashchange', handleHashChange);
     handleHashChange(); // Initial load
 
-    // --- Lottery Generator ---
+    // --- Lottery Generator --- (This code remains unchanged)
     const lottoButtons = document.querySelectorAll('.lotto-button');
     const lottoDisplay = document.getElementById('lotto-display-area');
 
@@ -81,27 +143,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 balls = [{ count: 6, max: 45, color: '#fbc400' }];
                 break;
             case 'korea-720':
-                // 1 group of 1-9, 5 groups of 0-9
                 const group = Math.floor(Math.random() * 5) + 1;
-                let rest = generateUniqueNumbers(6, 0, 9).map(n => n.val).join(''); // Extract only val
+                let rest = generateUniqueNumbers(6, 0, 9).map(n => n.val).join('');
                 return { type: 'structured', numbers: [group, ...rest.split('')] };
             case 'usa-powerball':
                 balls = [
-                    { count: 5, max: 69, color: '#e44d26', textColor: '#fff' }, // Red for main numbers
-                    { count: 1, max: 26, color: '#fbc400', textColor: '#fff' }  // Yellow for Powerball
+                    { count: 5, max: 69, color: '#e44d26', textColor: '#fff' },
+                    { count: 1, max: 26, color: '#fbc400', textColor: '#fff' }
                 ];
                 break;
             case 'usa-megamillions':
                 balls = [
-                    { count: 5, max: 70, color: '#2c3e50', textColor: '#fff' }, // Dark blue for main numbers
-                    { count: 1, max: 25, color: '#fbc400', textColor: '#fff' }  // Yellow for Mega Ball
+                    { count: 5, max: 70, color: '#2c3e50', textColor: '#fff' },
+                    { count: 1, max: 25, color: '#fbc400', textColor: '#fff' }
                 ];
                 break;
             case 'canada-649':
-                balls = [{ count: 6, max: 49, color: '#5cb85c', textColor: '#fff' }]; // Green
+                balls = [{ count: 6, max: 49, color: '#5cb85c', textColor: '#fff' }];
                 break;
             case 'canada-lottomax':
-                balls = [{ count: 7, max: 50, color: '#5bc0de', textColor: '#fff' }]; // Light Blue
+                balls = [{ count: 7, max: 50, color: '#5bc0de', textColor: '#fff' }];
                 break;
         }
 
@@ -153,73 +214,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         lottoDisplay.appendChild(container);
     }
-
-    // --- Gallery ---
-    const uploadButton = document.getElementById('upload-image-button');
-    const imageInput = document.getElementById('image-upload-input');
-    const galleryGrid = document.getElementById('gallery-grid');
-
-    function uploadImage(file) {
-        const storageRef = storage.ref();
-        const imageRef = storageRef.child(`images/${Date.now()}_${file.name}`);
-        const uploadTask = imageRef.put(file);
-
-        uploadTask.on('state_changed', 
-            (snapshot) => { /* Can be used to show progress */ }, 
-            (error) => {
-                console.error("Upload failed:", error);
-                alert('Image upload failed. Please try again.');
-            },
-            () => {
-                uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
-                    displayImage(downloadURL, false); // Prepend new image
-                });
-            }
-        );
-    }
-
-    function displayImage(url, append) {
-        const galleryItem = document.createElement('div');
-        galleryItem.className = 'gallery-item';
-        const img = document.createElement('img');
-        img.src = url;
-        galleryItem.appendChild(img);
-        if (append) {
-            galleryGrid.appendChild(galleryItem);
-        } else {
-            galleryGrid.prepend(galleryItem);
-        }
-    }
-
-    function loadImages() {
-        galleryGrid.innerHTML = '<p>Loading images...</p>';
-        const storageRef = storage.ref('images');
-
-        storageRef.listAll().then((res) => {
-            galleryGrid.innerHTML = '';
-            if (res.items.length === 0) {
-                galleryGrid.innerHTML = '<p>No images yet. Upload your first photo!</p>';
-                return;
-            }
-            const sortedItems = res.items.sort((a, b) => b.name.localeCompare(a.name));
-            sortedItems.forEach(itemRef => {
-                itemRef.getDownloadURL().then(url => {
-                    displayImage(url, true);
-                });
-            });
-        }).catch(error => {
-            console.error("Error loading images: ", error);
-            galleryGrid.innerHTML = '<p>Error loading images. Please try again later.</p>';
-        });
-    }
-
-    uploadButton.addEventListener('click', () => imageInput.click());
-
-    imageInput.addEventListener('change', (e) => {
-        if (e.target.files) {
-            Array.from(e.target.files).forEach(file => {
-                uploadImage(file);
-            });
-        }
-    });
 });

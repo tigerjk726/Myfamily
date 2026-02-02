@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,7 +18,7 @@
             <ul>
                 <li><a href="#home">Home</a></li>
                 <li><a href="#lotto">Lotto</a></li>
-                <li><a href="#gallery">Gallery</a></li>
+                <li><a href="#calendar">Calendar</a></li>
                 <li><a href="#contact">Contact</a></li>
                 <li><a href="#comments">Comments</a></li>
             </ul>
@@ -57,15 +59,9 @@
             </div>
         </section>
 
-        <section id="gallery">
-            <h2>Gallery</h2>
-            <div id="gallery-upload-controls">
-                <input type="file" id="image-upload-input" accept="image/*" multiple style="display: none;">
-                <button id="upload-image-button">Upload Photo(s)</button>
-            </div>
-            <div id="gallery-grid">
-                <!-- Images will be loaded here dynamically -->
-            </div>
+        <section id="calendar">
+            <h2>Family Calendar</h2>
+            <div id="calendar-container"></div>
         </section>
 
         <section id="contact">
@@ -99,8 +95,8 @@
     </footer>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
     <script id="dsq-count-scr" src="//myfamily-3.disqus.com/count.js" async></script>
     <script src="main.js" type="module"></script>
     <script>
