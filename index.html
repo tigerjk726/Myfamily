@@ -92,7 +92,7 @@
             <h2>Comments</h2>
             <div id="disqus_thread"></div>
             <p style="font-size: 0.9em; margin-top: 15px;">
-                <strong>중요:</strong> 댓글 기능을 사용하려면 Disqus.com에서 사이트를 등록하고 아래 스크립트의 'YOUR_SHORTNAME' 부분을 실제 Disqus shortname으로 교체해야 합니다.
+                <strong>중요:</strong> 댓글 기능을 사용하려면 Disqus.com에서 사이트를 등록하고 스크립트 내 'YOUR_SHORTNAME' 부분을 실제 Disqus shortname으로 교체해야 합니다. 현재 'myfamily-3'은 플레이스홀더입니다.
             </p>
         </section>
     </main>
@@ -101,15 +101,30 @@
         <p>&copy; 2023 Family Hub</p>
     </footer>
 
-    <script id="dsq-count-scr" src="//myfamily-3.disqus.com/count.js" async></script>
+    <script id="dsq-count-scr" src="//YOUR_SHORTNAME.disqus.com/count.js" async></script>
     <script src="main.js" type="module"></script>
     <script>
         const images = [
-            "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-            "https://images.unsplash.com/photo-1470770841072-d953d8530f20?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-            "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-            "https://images.unsplash.com/photo-1469854523086-dd00bc2074be?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-            "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+            "https://10wallpaper.com/wallpaper/medium/1510/Yosemite_National_Park-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/Water_droplets-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/The_Venetian_Harbor_Greece-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/The_Carina_Nebula-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/South_Nahanni_River-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/Rock_art_Canyon_Utah-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/red_fox_forest_Sweden-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/NASA_robotic_rover-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/gemsboks_clash_Namibia-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/Jardin_du_Luxembourg_Paris-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/Flatiron_Building_New_York_-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/Elephant_Trunk_Hill_Guilin-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/Crested_pigeon_Australia-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/Chigmit_Mountains_Alaska-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/Boardwalk_France-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/Autumn_aspens-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/A_weeping_willow_tree-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/Deer_Richmond_Park_England-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/Spark_art_photography-October_2015_Bing_Wallpaper_medium.jpg",
+            "https://10wallpaper.com/wallpaper/medium/1510/Hot_air_balloons-October_2015_Bing_Wallpaper_medium.jpg"
         ];
         let currentImageIndex = 0;
         const homeImage = document.getElementById('home-image');
@@ -119,7 +134,7 @@
             homeImage.src = images[currentImageIndex];
         }
 
-        setInterval(changeImage, 5000); // Change image every 5 seconds
+        setInterval(changeImage, 10000); // Change image every 10 seconds
     </script>
     <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
 </body>
