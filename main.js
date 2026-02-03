@@ -1,6 +1,6 @@
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Firebase Config (App initialization is kept for potential future use) ---
+    // --- Firebase Config ---
     const firebaseConfig = {
         apiKey: "AIzaSyBPTUgBQVsdQ8zsHCmE6CtjcL3LASoweLs",
         authDomain: "my-family-in-canada-8348-d04e1.firebaseapp.com",
@@ -10,13 +10,26 @@ document.addEventListener('DOMContentLoaded', () => {
         appId: "1:1043656805377:web:902d6f8dc9dcbb95be4400"
     };
     firebase.initializeApp(firebaseConfig);
+    const storage = firebase.storage(); // Initialize Firebase Storage
 
     // --- Google Calendar Config ---
     const GOOGLE_CALENDAR_API_KEY = 'AIzaSyBPTUgBQVsdQ8zsHCmE6CtjcL3LASoweLs';
     const GOOGLE_CALENDAR_ID = 'tigerjk726@gmail.com';
 
-    // Theme Toggle
+    // --- DOM Element References ---
     const themeToggle = document.getElementById('theme-toggle');
+    const links = document.querySelectorAll('nav a');
+    const sections = document.querySelectorAll('main section');
+    const lottoButtons = document.querySelectorAll('.lotto-button');
+    const lottoDisplay = document.getElementById('lotto-display-area');
+    // Gallery Elements
+    const fileInput = document.getElementById('file-input');
+    const uploadButton = document.getElementById('upload-button');
+    const uploadProgress = document.getElementById('upload-progress');
+    const galleryContainer = document.getElementById('gallery-container');
+
+
+    // --- Theme Toggle ---
     themeToggle.addEventListener('click', () => {
         const currentTheme = document.documentElement.getAttribute('data-theme');
         if (currentTheme === 'dark') {
@@ -28,10 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Navigation
-    const links = document.querySelectorAll('nav a');
-    const sections = document.querySelectorAll('main section');
-
+    // --- Navigation ---
     function showSection(id) {
         sections.forEach(section => {
             section.classList.remove('active');
@@ -53,8 +63,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initializeCalendar() {
         const calendarEl = document.getElementById('calendar-container');
-        if (!calendarEl || calendar) { // If no element or calendar is already initialized
-             return;
+        if (!calendarEl || calendar) {
+            return;
         }
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
@@ -66,21 +76,106 @@ document.addEventListener('DOMContentLoaded', () => {
             googleCalendarApiKey: GOOGLE_CALENDAR_API_KEY,
             events: {
                 googleCalendarId: GOOGLE_CALENDAR_ID,
-                className: 'gcal-event' // Optional: for custom styling
+                className: 'gcal-event'
             },
-            editable: false, // Google Calendar events are read-only via API Key
+            editable: false,
             eventClick: function(info) {
-                // For GCal events, info.event.url is the link to the event
                 if (info.event.url) {
-                    info.jsEvent.preventDefault(); // Prevent browser from following the a-tag's href
-                    window.open(info.event.url, '_blank'); // Open in a new tab
+                    info.jsEvent.preventDefault();
+                    window.open(info.event.url, '_blank');
                 }
             }
         });
-
         calendar.render();
     }
+    
+    // --- Photo Gallery Logic ---
 
+    // 1. Function to load and display existing images from Storage
+    async function loadAndDisplayImages() {
+        const storageRef = storage.ref('images');
+        try {
+            const result = await storageRef.listAll();
+            galleryContainer.innerHTML = ''; // Clear gallery before loading
+            const sortedItems = result.items.sort((a, b) => b.name.localeCompare(a.name)); // Sort by name (newest first)
+
+            for (const imageRef of sortedItems) {
+                const url = await imageRef.getDownloadURL();
+                displayImage(url);
+            }
+        } catch (error) {
+            console.error("Error loading images: ", error);
+        }
+    }
+
+    // 2. Function to create and append an image element to the gallery
+    function displayImage(url) {
+        const galleryItem = document.createElement('div');
+        galleryItem.className = 'gallery-item';
+        
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = "Uploaded family photo";
+
+        galleryItem.appendChild(img);
+        galleryContainer.appendChild(galleryItem);
+    }
+
+    // 3. Function to handle the file upload process
+    function handleUpload() {
+        const file = fileInput.files[0];
+        if (!file) {
+            alert("Please select a file first!");
+            return;
+        }
+
+        // Create a unique filename using a timestamp
+        const timestamp = new Date().getTime();
+        const filename = `${timestamp}-${file.name}`;
+        const storageRef = storage.ref(`images/${filename}`);
+        
+        const uploadTask = storageRef.put(file);
+
+        // Listen for state changes, errors, and completion of the upload.
+        uploadTask.on('state_changed',
+            (snapshot) => {
+                // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                uploadProgress.style.display = 'block';
+                uploadProgress.value = progress;
+            },
+            (error) => {
+                console.error("Upload failed:", error);
+                alert("Upload failed. Please try again.");
+                uploadProgress.style.display = 'none';
+            },
+            async () => {
+                // Upload completed successfully, now we can get the download URL
+                uploadProgress.style.display = 'none';
+                fileInput.value = ''; // Clear the file input
+                try {
+                    const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                    // Prepend the new image to the gallery for immediate feedback
+                    const galleryItem = document.createElement('div');
+                    galleryItem.className = 'gallery-item';
+                    const img = document.createElement('img');
+                    img.src = downloadURL;
+                    img.alt = "Uploaded family photo";
+                    galleryItem.appendChild(img);
+                    galleryContainer.insertBefore(galleryItem, galleryContainer.firstChild);
+
+                } catch (error) {
+                    console.error("Could not get download URL:", error);
+                }
+            }
+        );
+    }
+
+    // Add event listener to the upload button
+    uploadButton.addEventListener('click', handleUpload);
+
+
+    // --- Hash-based Routing ---
     function handleHashChange() {
         const hash = window.location.hash.substring(1) || 'home';
         showSection(hash);
@@ -91,18 +186,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         if (hash === 'calendar') {
-            // Use a slight delay to ensure the section is visible before rendering
             setTimeout(initializeCalendar, 0);
+        }
+        if (hash === 'gallery') {
+            loadAndDisplayImages(); // Load images when gallery is viewed
         }
     }
 
     window.addEventListener('hashchange', handleHashChange);
-    handleHashChange(); // Initial load
+    handleHashChange(); // Initial load based on hash
 
     // --- Lottery Generator --- (This code remains unchanged)
-    const lottoButtons = document.querySelectorAll('.lotto-button');
-    const lottoDisplay = document.getElementById('lotto-display-area');
-
     lottoButtons.forEach(button => {
         button.addEventListener('click', () => {
             const type = button.dataset.lottoType;

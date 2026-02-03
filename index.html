@@ -19,6 +19,7 @@
                 <li><a href="#home">Home</a></li>
                 <li><a href="#lotto">Lotto</a></li>
                 <li><a href="#calendar">Calendar</a></li>
+                <li><a href="#gallery">Gallery</a></li>
                 <li><a href="#comments">Comments</a></li>
             </ul>
         </nav>
@@ -63,6 +64,18 @@
             <div id="calendar-container"></div>
         </section>
 
+        <section id="gallery">
+            <h2>Photo Gallery</h2>
+            <div id="upload-container">
+                <input type="file" id="file-input" accept="image/*">
+                <button id="upload-button">Upload Photo</button>
+                <progress id="upload-progress" value="0" max="100" style="display: none;"></progress>
+            </div>
+            <div id="gallery-container">
+                <!-- Uploaded photos will be displayed here -->
+            </div>
+        </section>
+
         <section id="comments">
             <h2>Comments</h2>
             <div id="disqus_thread"></div>
@@ -94,6 +107,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
     <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/google-calendar@5.11.3/main.global.min.js'></script>
     <script id="dsq-count-scr" src="//myfamily-3.disqus.com/count.js" async></script>

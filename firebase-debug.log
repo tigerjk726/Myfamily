@@ -1,0 +1,152 @@
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-02-02T22:19:06.285Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-02-02T22:19:06.286Z] > authorizing via signed-in user (tigerjk726@gmail.com)
+[debug] [2026-02-02T22:19:06.289Z] Checked if tokens are valid: false, expires at: 1770067123876
+[debug] [2026-02-02T22:19:06.289Z] Checked if tokens are valid: false, expires at: 1770067123876
+[debug] [2026-02-02T22:19:06.290Z] > refreshing access token with scopes: []
+[debug] [2026-02-02T22:19:06.293Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-02-02T22:19:06.294Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-02-02T22:19:06.348Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-02-02T22:19:06.349Z] > authorizing via signed-in user (tigerjk726@gmail.com)
+[debug] [2026-02-02T22:19:06.349Z] Checked if tokens are valid: false, expires at: 1770067123876
+[debug] [2026-02-02T22:19:06.350Z] Checked if tokens are valid: false, expires at: 1770067123876
+[debug] [2026-02-02T22:19:06.350Z] > refreshing access token with scopes: []
+[debug] [2026-02-02T22:19:06.351Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-02-02T22:19:06.351Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-02-02T22:19:06.426Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-02-02T22:19:06.426Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-02-02T22:19:06.449Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo [none]
+[debug] [2026-02-02T22:19:06.453Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-02-02T22:19:06.453Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-02-02T22:19:06.468Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo [none]
+[debug] [2026-02-02T22:19:06.656Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo 200
+[debug] [2026-02-02T22:19:06.658Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo {"name":"projects/my-family-in-canada-8348-d04e1/billingInfo","projectId":"my-family-in-canada-8348-d04e1","billingAccountName":"","billingEnabled":false}
+[debug] [2026-02-02T22:19:06.671Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.671Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.673Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.673Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.674Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.674Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.695Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.696Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.696Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.696Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.696Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/storage.googleapis.com [none]
+[debug] [2026-02-02T22:19:06.696Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/storage.googleapis.com  x-goog-user-project=my-family-in-canada-8348-d04e1
+[debug] [2026-02-02T22:19:06.699Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebasedataconnect.googleapis.com [none]
+[debug] [2026-02-02T22:19:06.699Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebasedataconnect.googleapis.com  x-goog-user-project=my-family-in-canada-8348-d04e1
+[debug] [2026-02-02T22:19:06.702Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/cloudfunctions.googleapis.com [none]
+[debug] [2026-02-02T22:19:06.702Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/cloudfunctions.googleapis.com  x-goog-user-project=my-family-in-canada-8348-d04e1
+[debug] [2026-02-02T22:19:06.704Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebaseapphosting.googleapis.com [none]
+[debug] [2026-02-02T22:19:06.705Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebaseapphosting.googleapis.com  x-goog-user-project=my-family-in-canada-8348-d04e1
+[debug] [2026-02-02T22:19:06.707Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebaseio.com [none]
+[debug] [2026-02-02T22:19:06.707Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebaseio.com  x-goog-user-project=my-family-in-canada-8348-d04e1
+[debug] [2026-02-02T22:19:06.743Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo 200
+[debug] [2026-02-02T22:19:06.743Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo {"name":"projects/my-family-in-canada-8348-d04e1/billingInfo","projectId":"my-family-in-canada-8348-d04e1","billingAccountName":"","billingEnabled":false}
+[debug] [2026-02-02T22:19:06.744Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.745Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.745Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.745Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.746Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.746Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.756Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.756Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.756Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.756Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:06.757Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/storage.googleapis.com [none]
+[debug] [2026-02-02T22:19:06.757Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/storage.googleapis.com  x-goog-user-project=my-family-in-canada-8348-d04e1
+[debug] [2026-02-02T22:19:06.760Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebasedataconnect.googleapis.com [none]
+[debug] [2026-02-02T22:19:06.760Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebasedataconnect.googleapis.com  x-goog-user-project=my-family-in-canada-8348-d04e1
+[debug] [2026-02-02T22:19:06.764Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/cloudfunctions.googleapis.com [none]
+[debug] [2026-02-02T22:19:06.764Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/cloudfunctions.googleapis.com  x-goog-user-project=my-family-in-canada-8348-d04e1
+[debug] [2026-02-02T22:19:06.767Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebaseapphosting.googleapis.com [none]
+[debug] [2026-02-02T22:19:06.768Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebaseapphosting.googleapis.com  x-goog-user-project=my-family-in-canada-8348-d04e1
+[debug] [2026-02-02T22:19:06.771Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebaseio.com [none]
+[debug] [2026-02-02T22:19:06.771Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebaseio.com  x-goog-user-project=my-family-in-canada-8348-d04e1
+[debug] [2026-02-02T22:19:06.883Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebaseio.com 403
+[debug] [2026-02-02T22:19:06.884Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebaseio.com [omitted]
+[debug] [2026-02-02T22:19:06.944Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebaseio.com 403
+[debug] [2026-02-02T22:19:06.944Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebaseio.com [omitted]
+[debug] [2026-02-02T22:19:07.007Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebaseapphosting.googleapis.com 200
+[debug] [2026-02-02T22:19:07.007Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2026-02-02T22:19:07.014Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebasedataconnect.googleapis.com 200
+[debug] [2026-02-02T22:19:07.014Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2026-02-02T22:19:07.036Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/cloudfunctions.googleapis.com 200
+[debug] [2026-02-02T22:19:07.037Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/cloudfunctions.googleapis.com [omitted]
+[debug] [2026-02-02T22:19:07.044Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/storage.googleapis.com 200
+[debug] [2026-02-02T22:19:07.045Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/storage.googleapis.com [omitted]
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-02-02T22:19:07.059Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-02-02T22:19:07.059Z] > authorizing via signed-in user (tigerjk726@gmail.com)
+[debug] [2026-02-02T22:19:07.059Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:07.059Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:07.060Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo [none]
+[debug] [2026-02-02T22:19:07.091Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebaseapphosting.googleapis.com 200
+[debug] [2026-02-02T22:19:07.091Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2026-02-02T22:19:07.107Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebasedataconnect.googleapis.com 200
+[debug] [2026-02-02T22:19:07.107Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2026-02-02T22:19:07.111Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/storage.googleapis.com 200
+[debug] [2026-02-02T22:19:07.112Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/storage.googleapis.com [omitted]
+[debug] [2026-02-02T22:19:07.122Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/cloudfunctions.googleapis.com 200
+[debug] [2026-02-02T22:19:07.122Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/services/cloudfunctions.googleapis.com [omitted]
+[debug] [2026-02-02T22:19:07.134Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo 200
+[debug] [2026-02-02T22:19:07.135Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo {"name":"projects/my-family-in-canada-8348-d04e1/billingInfo","projectId":"my-family-in-canada-8348-d04e1","billingAccountName":"","billingEnabled":false}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-02-02T22:19:07.140Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-02-02T22:19:07.142Z] > authorizing via signed-in user (tigerjk726@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-02-02T22:19:07.164Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-02-02T22:19:07.165Z] > authorizing via signed-in user (tigerjk726@gmail.com)
+[debug] [2026-02-02T22:19:07.165Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:07.165Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:07.166Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo [none]
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-02-02T22:19:07.176Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-02-02T22:19:07.176Z] > authorizing via signed-in user (tigerjk726@gmail.com)
+[debug] [2026-02-02T22:19:07.176Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:07.177Z] Checked if tokens are valid: true, expires at: 1770074345453
+[debug] [2026-02-02T22:19:07.177Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo [none]
+[debug] [2026-02-02T22:19:07.251Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo 200
+[debug] [2026-02-02T22:19:07.252Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo {"name":"projects/my-family-in-canada-8348-d04e1/billingInfo","projectId":"my-family-in-canada-8348-d04e1","billingAccountName":"","billingEnabled":false}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-02-02T22:19:07.255Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-02-02T22:19:07.255Z] > authorizing via signed-in user (tigerjk726@gmail.com)
+[debug] [2026-02-02T22:19:07.271Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo 200
+[debug] [2026-02-02T22:19:07.272Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo {"name":"projects/my-family-in-canada-8348-d04e1/billingInfo","projectId":"my-family-in-canada-8348-d04e1","billingAccountName":"","billingEnabled":false}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-02-02T22:19:07.276Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-02-02T22:19:07.276Z] > authorizing via signed-in user (tigerjk726@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-02-03T00:46:25.512Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-02-03T00:46:25.537Z] > authorizing via signed-in user (tigerjk726@gmail.com)
+[debug] [2026-02-03T00:46:25.548Z] Checked if tokens are valid: false, expires at: 1770074345453
+[debug] [2026-02-03T00:46:25.549Z] Checked if tokens are valid: false, expires at: 1770074345453
+[debug] [2026-02-03T00:46:25.549Z] > refreshing access token with scopes: []
+[debug] [2026-02-03T00:46:25.568Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-02-03T00:46:25.568Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-02-03T00:46:25.774Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-02-03T00:46:25.774Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-02-03T00:46:25.827Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo [none]
+[debug] [2026-02-03T00:46:25.950Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo 200
+[debug] [2026-02-03T00:46:25.952Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo {"name":"projects/my-family-in-canada-8348-d04e1/billingInfo","projectId":"my-family-in-canada-8348-d04e1","billingAccountName":"","billingEnabled":false}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-02-03T00:46:25.969Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-02-03T00:46:25.969Z] > authorizing via signed-in user (tigerjk726@gmail.com)
+[debug] [2026-02-03T00:46:25.970Z] Checked if tokens are valid: true, expires at: 1770083184775
+[debug] [2026-02-03T00:46:25.970Z] Checked if tokens are valid: true, expires at: 1770083184775
+[debug] [2026-02-03T00:46:25.970Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo [none]
+[debug] [2026-02-03T00:46:26.067Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo 200
+[debug] [2026-02-03T00:46:26.067Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/my-family-in-canada-8348-d04e1/billingInfo {"name":"projects/my-family-in-canada-8348-d04e1/billingInfo","projectId":"my-family-in-canada-8348-d04e1","billingAccountName":"","billingEnabled":false}
+[info] ✔  Wrote configuration info to firebase.json 
+[info] ✔  Wrote project information to .firebaserc 
