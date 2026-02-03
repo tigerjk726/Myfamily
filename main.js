@@ -1,6 +1,6 @@
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Firebase Config ---
+    // --- Firebase Config (App initialization is kept for potential future use) ---
     const firebaseConfig = {
         apiKey: "AIzaSyBPTUgBQVsdQ8zsHCmE6CtjcL3LASoweLs",
         authDomain: "my-family-in-canada-8348-d04e1.firebaseapp.com",
@@ -10,7 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
         appId: "1:1043656805377:web:902d6f8dc9dcbb95be4400"
     };
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore(); // Use Firestore
+
+    // --- Google Calendar Config ---
+    const GOOGLE_CALENDAR_API_KEY = 'AIzaSyBPTUgBQVsdQ8zsHCmE6CtjcL3LASoweLs';
+    const GOOGLE_CALENDAR_ID = 'tigerjk726@gmail.com';
 
     // Theme Toggle
     const themeToggle = document.getElementById('theme-toggle');
@@ -60,46 +63,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 center: 'title',
                 right: 'dayGridMonth,timeGridWeek,timeGridDay'
             },
-            editable: true,
-            dateClick: function(info) {
-                const title = prompt('Enter event title:');
-                if (title) {
-                    db.collection('events').add({
-                        title: title,
-                        start: info.dateStr,
-                        allDay: true
-                    }).catch(error => console.error("Error adding event: ", error));
-                }
+            googleCalendarApiKey: GOOGLE_CALENDAR_API_KEY,
+            events: {
+                googleCalendarId: GOOGLE_CALENDAR_ID,
+                className: 'gcal-event' // Optional: for custom styling
             },
+            editable: false, // Google Calendar events are read-only via API Key
             eventClick: function(info) {
-                if (confirm(`Delete event ''''' + info.event.title + '''''?`)) {
-                    // We need the document ID to delete it. Let's store it in extendedProps.
-                    const eventDocId = info.event.extendedProps.docId;
-                    if(eventDocId){
-                        db.collection('events').doc(eventDocId).delete()
-                        .catch(error => console.error("Error deleting event: ", error));
-                    } else {
-                        console.error("Cannot delete event without a document ID.");
-                    }
+                // For GCal events, info.event.url is the link to the event
+                if (info.event.url) {
+                    info.jsEvent.preventDefault(); // Prevent browser from following the a-tag's href
+                    window.open(info.event.url, '_blank'); // Open in a new tab
                 }
-            }
-        });
-
-        // Load events from Firestore and listen for real-time updates
-        db.collection('events').onSnapshot(snapshot => {
-            const events = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                events.push({
-                    docId: doc.id, // Store doc id for deletion
-                    title: data.title,
-                    start: data.start,
-                    allDay: data.allDay
-                });
-            });
-            if(calendar){
-                calendar.removeAllEvents(); // Clear old events
-                calendar.addEventSource(events); // Add new events
             }
         });
 
