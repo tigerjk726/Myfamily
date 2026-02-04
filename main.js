@@ -10,7 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
         appId: "1:1043656805377:web:902d6f8dc9dcbb95be4400"
     };
     firebase.initializeApp(firebaseConfig);
-    const storage = firebase.storage(); // Initialize Firebase Storage
+    const db = firebase.firestore(); // Initialize Firestore
+
+    // --- Cloudinary Config ---
+    const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dklpq8xg8/image/upload';
+    const CLOUDINARY_UPLOAD_PRESET = 'family_hub_preset';
 
     // --- Google Calendar Config ---
     const GOOGLE_CALENDAR_API_KEY = 'AIzaSyBPTUgBQVsdQ8zsHCmE6CtjcL3LASoweLs';
@@ -88,23 +92,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         calendar.render();
     }
-    
-    // --- Photo Gallery Logic ---
 
-    // 1. Function to load and display existing images from Storage
+    // --- Photo Gallery Logic (Cloudinary + Firestore) ---
+
+    // 1. Function to load image URLs from Firestore and display them
     async function loadAndDisplayImages() {
-        const storageRef = storage.ref('images');
+        galleryContainer.innerHTML = ''; // Clear gallery
         try {
-            const result = await storageRef.listAll();
-            galleryContainer.innerHTML = ''; // Clear gallery before loading
-            const sortedItems = result.items.sort((a, b) => b.name.localeCompare(a.name)); // Sort by name (newest first)
-
-            for (const imageRef of sortedItems) {
-                const url = await imageRef.getDownloadURL();
-                displayImage(url);
+            const snapshot = await db.collection('images').orderBy('createdAt', 'desc').get();
+            if (snapshot.empty) {
+                console.log('No images found in Firestore.');
+                return;
             }
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.url) {
+                    displayImage(data.url);
+                }
+            });
         } catch (error) {
-            console.error("Error loading images: ", error);
+            console.error("Error getting images from Firestore: ", error);
         }
     }
 
@@ -112,16 +119,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function displayImage(url) {
         const galleryItem = document.createElement('div');
         galleryItem.className = 'gallery-item';
-        
         const img = document.createElement('img');
         img.src = url;
         img.alt = "Uploaded family photo";
-
         galleryItem.appendChild(img);
         galleryContainer.appendChild(galleryItem);
     }
 
-    // 3. Function to handle the file upload process
+    // 3. Function to handle the file upload process to Cloudinary
     function handleUpload() {
         const file = fileInput.files[0];
         if (!file) {
@@ -129,30 +134,55 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const timestamp = new Date().getTime();
-        const filename = `${timestamp}-${file.name}`;
-        const storageRef = storage.ref(`images/${filename}`);
-        
-        const uploadTask = storageRef.put(file);
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
-        uploadTask.on('state_changed',
-            (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', CLOUDINARY_URL, true);
+
+        xhr.upload.onprogress = function(e) {
+            if (e.lengthComputable) {
+                const progress = (e.loaded / e.total) * 100;
                 uploadProgress.style.display = 'block';
                 uploadProgress.value = progress;
-            },
-            (error) => {
-                console.error("Upload failed:", error);
-                alert(`Upload failed. Error: ${error.code}`);
-                uploadProgress.style.display = 'none';
-            },
-            () => {
-                uploadProgress.style.display = 'none';
-                fileInput.value = ''; 
-                alert('Photo uploaded successfully!');
-                loadAndDisplayImages();
             }
-        );
+        };
+
+        xhr.onload = function() {
+            uploadProgress.style.display = 'none';
+            if (xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                const imageUrl = response.secure_url;
+
+                // Save the URL to Firestore
+                db.collection('images').add({
+                    url: imageUrl,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                })
+                .then(() => {
+                    alert('Photo uploaded successfully!');
+                    fileInput.value = '';
+                    loadAndDisplayImages(); // Refresh gallery
+                })
+                .catch((error) => {
+                    console.error("Error saving image URL to Firestore: ", error);
+                    alert('Upload to Cloudinary succeeded, but failed to save to database.');
+                });
+
+            } else {
+                console.error("Upload to Cloudinary failed:", xhr.responseText);
+                alert(`Upload failed. Status: ${xhr.status}`);
+            }
+        };
+
+        xhr.onerror = function() {
+            console.error("Upload failed due to a network error.");
+            alert('Upload failed due to a network error.');
+            uploadProgress.style.display = 'none';
+        };
+
+        xhr.send(formData);
     }
 
     // Add event listener to the upload button
