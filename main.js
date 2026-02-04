@@ -129,44 +129,28 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Create a unique filename using a timestamp
         const timestamp = new Date().getTime();
         const filename = `${timestamp}-${file.name}`;
         const storageRef = storage.ref(`images/${filename}`);
         
         const uploadTask = storageRef.put(file);
 
-        // Listen for state changes, errors, and completion of the upload.
         uploadTask.on('state_changed',
             (snapshot) => {
-                // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
                 const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                 uploadProgress.style.display = 'block';
                 uploadProgress.value = progress;
             },
             (error) => {
                 console.error("Upload failed:", error);
-                alert("Upload failed. Please try again.");
+                alert(`Upload failed. Error: ${error.code}`);
                 uploadProgress.style.display = 'none';
             },
-            async () => {
-                // Upload completed successfully, now we can get the download URL
+            () => {
                 uploadProgress.style.display = 'none';
-                fileInput.value = ''; // Clear the file input
-                try {
-                    const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-                    // Prepend the new image to the gallery for immediate feedback
-                    const galleryItem = document.createElement('div');
-                    galleryItem.className = 'gallery-item';
-                    const img = document.createElement('img');
-                    img.src = downloadURL;
-                    img.alt = "Uploaded family photo";
-                    galleryItem.appendChild(img);
-                    galleryContainer.insertBefore(galleryItem, galleryContainer.firstChild);
-
-                } catch (error) {
-                    console.error("Could not get download URL:", error);
-                }
+                fileInput.value = ''; 
+                alert('Photo uploaded successfully!');
+                loadAndDisplayImages();
             }
         );
     }
