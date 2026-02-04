@@ -1,4 +1,4 @@
-
+document.addEventListener('DOMContentLoaded', () => {
 // --- Firebase Config ---
 const firebaseConfig = {
     apiKey: "AIzaSyBPTUgBQVsdQ8zsHCmE6CtjcL3LASoweLs",
@@ -296,3 +296,4 @@ function displayLottoNumbers(result, type) {
     }
     lottoDisplay.appendChild(container);
 }
+});
