@@ -6,5 +6,8 @@ service cloud.firestore {
     match /events/{eventId} {
       allow read, write;
     }
+    match /images/{imageId} {
+        allow read, create;
+    }
   }
 }

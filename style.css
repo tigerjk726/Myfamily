@@ -104,31 +104,33 @@ section.active {
     display: block; /* Shown when active */
 }
 
+/* New Home Section Styles */
+section#home {
+    background-image: url('https://uploads.disquscdn.com/images/dbbbc85f180fc8a613bd04aa0d8bfc7bdb13ed15996d6052f56942eee965e149.jpg');
+    background-size: cover;
+    background-position: center;
+    color: white; /* Change text color to white */
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px; /* Specify a minimum height for the section */
+}
+
+section#home h2, section#home p {
+    background-color: rgba(0, 0, 0, 0.5); /* Add a semi-transparent black background */
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Enhance text shadow */
+}
+
 h2 {
     color: var(--primary-color);
     border-bottom: 2px solid var(--primary-color);
     padding-bottom: 10px;
     margin-top: 0;
     font-weight: 700;
-}
-
-/* Home Section */
-#home-image-container {
-    width: 100%;
-    margin-top: 20px;
-    overflow: hidden;
-    border-radius: 8px;
-}
-
-#home-image {
-    width: 100%;
-    height: auto;
-    object-fit: cover;
-    transition: transform 0.5s ease;
-}
-
-#home-image:hover {
-    transform: scale(1.05);
 }
 
 /* Lotto Section */
