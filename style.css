@@ -104,25 +104,29 @@ section.active {
     display: block; /* Shown when active */
 }
 
-/* New Home Section Styles */
+/* Home Section Styles */
 section#home {
-    background-image: url('https://uploads.disquscdn.com/images/dbbbc85f180fc8a613bd04aa0d8bfc7bdb13ed15996d6052f56942eee965e149.jpg');
-    background-size: cover;
-    background-position: center;
-    color: white; /* Change text color to white */
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 400px; /* Specify a minimum height for the section */
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
 }
 
-section#home h2, section#home p {
-    background-color: rgba(0, 0, 0, 0.5); /* Add a semi-transparent black background */
-    padding: 10px 20px;
+#home-image-container {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+#home-image {
+    width: 100%;
+    height: auto;
+    display: block;
     border-radius: 8px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Enhance text shadow */
+    box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+#home-text-container {
+    padding: 20px;
+    text-align: center;
 }
 
 h2 {
