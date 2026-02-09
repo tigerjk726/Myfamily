@@ -69,7 +69,7 @@ function initializeCalendar() {
     if (!calendarEl || calendar) {
         return;
     }
-    calendar = new FullCalendar.Calendar(calendarEl, {
+    calendar = new window.FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         headerToolbar: {
             left: 'prev,next today',
