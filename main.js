@@ -69,24 +69,14 @@ function initializeCalendar() {
     if (!calendarEl || calendar) {
         return;
     }
+    // Temporarily removed Google Calendar integration to isolate the core issue.
+    // The goal is to first render a blank calendar successfully.
     calendar = new window.FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
             right: 'dayGridMonth,timeGridWeek,timeGridDay'
-        },
-        googleCalendarApiKey: GOOGLE_CALENDAR_API_KEY,
-        events: {
-            googleCalendarId: GOOGLE_CALENDAR_ID,
-            className: 'gcal-event'
-        },
-        editable: false,
-        eventClick: function(info) {
-            if (info.event.url) {
-                info.jsEvent.preventDefault();
-                window.open(info.event.url, '_blank');
-            }
         }
     });
     calendar.render();
