@@ -24,10 +24,15 @@
                 <li><a href="#comments">Comments</a></li>
             </ul>
         </nav>
-        <button id="theme-toggle">🌙</button>
+        <div class="header-buttons">
+            <button id="music-toggle">🎵</button>
+            <button id="theme-toggle">🌙</button>
+        </div>
     </header>
 
     <main>
+        <div id="player" style="display: none;"></div>
+
         <section id="home">
             <div id="home-image-container">
                 <img id="home-image" src="https://uploads.disquscdn.com/images/dbbbc85f180fc8a613bd04aa0d8bfc7bdb13ed15996d6052f56942eee965e149.jpg" alt="Family Photo">
@@ -134,6 +139,7 @@
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
     <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/google-calendar@5.11.3/main.global.min.js'></script>
     <script id="dsq-count-scr" src="//myfamily-3.disqus.com/count.js" async></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script src="main.js" type="module"></script>
     <script>
     var disqus_config = function () {
