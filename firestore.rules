@@ -9,5 +9,9 @@ service cloud.firestore {
     match /images/{imageId} {
         allow read, create;
     }
+    // Allow public access to the useful_links collection
+    match /useful_links/{linkId} {
+        allow read, write;
+    }
   }
 }
