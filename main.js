@@ -282,55 +282,96 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function generateLottoNumbers(type) {
         let balls = [];
+        let specialCount = 0;
+
         switch (type) {
-            case 'korea-645': balls = [{ count: 6, max: 45, color: '#fbc400' }]; break;
+            case 'korea-645': balls = [{ count: 6, max: 45 }]; break;
             case 'korea-720':
                 const group = Math.floor(Math.random() * 5) + 1;
-                let rest = generateUniqueNumbers(6, 0, 9).map(n => n.val).join('');
-                return { type: 'structured', numbers: [group, ...rest.split('')] };
-            case 'usa-powerball': balls = [{ count: 5, max: 69, color: '#e44d26' }, { count: 1, max: 26, color: '#fbc400' }]; break;
-            case 'usa-megamillions': balls = [{ count: 5, max: 70, color: '#2c3e50' }, { count: 1, max: 25, color: '#fbc400' }]; break;
-            case 'canada-649': balls = [{ count: 6, max: 49, color: '#5cb85c' }]; break;
-            case 'canada-lottomax': balls = [{ count: 7, max: 50, color: '#5bc0de' }]; break;
+                let rest = generateUniqueNumbers(6, 0, 9).join('');
+                return { structured: `<strong>${group}조</strong> ${rest}` };
+            case 'usa-powerball':
+                balls = [{ count: 5, max: 69 }];
+                specialCount = 1;
+                break;
+            case 'usa-megamillions':
+                balls = [{ count: 5, max: 70 }];
+                specialCount = 1;
+                break;
+            case 'canada-649': balls = [{ count: 6, max: 49 }]; break;
+            case 'canada-lottomax': balls = [{ count: 7, max: 50 }]; break;
         }
-        const generated = balls.map(b => generateUniqueNumbers(b.count, 1, b.max, b.color));
-        return { type: 'balls', numbers: generated.flat() };
+
+        let finalNumbers = balls.map(b => generateUniqueNumbers(b.count, 1, b.max)).flat();
+        if (specialCount > 0) {
+            const specialMax = (type === 'usa-powerball') ? 26 : 25;
+            const specialNumbers = generateUniqueNumbers(specialCount, 1, specialMax);
+            finalNumbers = finalNumbers.concat(specialNumbers.map(n => ({ val: n, special: true })));
+        }
+        return { numbers: finalNumbers };
     }
 
-    function generateUniqueNumbers(count, min, max, color) {
+    function generateUniqueNumbers(count, min, max) {
         let numbers = new Set();
-        while (numbers.size < count) numbers.add(Math.floor(Math.random() * (max - min + 1)) + min);
-        return Array.from(numbers).sort((a, b) => a - b).map(val => ({ val, color, textColor: '#fff' }));
+        while (numbers.size < count) {
+            numbers.add(Math.floor(Math.random() * (max - min + 1)) + min);
+        }
+        return Array.from(numbers).sort((a, b) => a - b);
     }
 
     function displayLottoNumbers(result, type) {
         lottoDisplay.innerHTML = '';
-        const container = document.createElement('div');
-        container.className = 'lotto-numbers-container';
-        if (result.type === 'structured') {
-            const groupDiv = document.createElement('div');
-            groupDiv.className = 'pension-lotto-group';
-            groupDiv.innerHTML = `<strong>${result.numbers[0]}조</strong>`;
-            container.appendChild(groupDiv);
-            const digitsDiv = document.createElement('div');
-            digitsDiv.className = 'pension-lotto-digits';
-            result.numbers.slice(1).forEach(digit => {
-                const digitSpan = document.createElement('span');
-                digitSpan.className = 'number-ball pension-digit-ball';
-                digitSpan.textContent = digit;
-                digitsDiv.appendChild(digitSpan);
-            });
-            container.appendChild(digitsDiv);
-        } else {
-            result.numbers.forEach(num => {
+        if (result.structured) {
+            lottoDisplay.innerHTML = result.structured;
+        } else if (result.numbers) {
+            const container = document.createElement('div');
+            container.className = 'lotto-numbers-container';
+
+            result.numbers.forEach(numObj => {
                 const ball = document.createElement('div');
-                ball.className = 'number-ball';
-                ball.textContent = num.val;
-                ball.style.backgroundColor = num.color || '#ddd';
-                ball.style.color = num.textColor || '#333';
+                let num, isSpecial;
+
+                if (typeof numObj === 'object' && numObj !== null) {
+                    num = numObj.val;
+                    isSpecial = numObj.special;
+                } else {
+                    num = numObj;
+                    isSpecial = false;
+                }
+
+                ball.textContent = num;
+                ball.className = 'lotto-number';
+                if (isSpecial) {
+                    ball.classList.add('lotto-special-number');
+                }
+
+                // Assign color based on lotto type
+                let color;
+                switch (type) {
+                    case 'korea-645': color = getLotto645Color(num); break;
+                    case 'usa-powerball': color = isSpecial ? '#e62e2e' : '#fff'; break;
+                    case 'usa-megamillions': color = isSpecial ? '#fbc400' : '#0033a0'; break;
+                    case 'canada-649': color = '#ce1126'; break;
+                    case 'canada-lottomax': color = '#009cde'; break;
+                    default: color = '#ddd';
+                }
+                ball.style.backgroundColor = color;
+                if(type === 'usa-powerball' && !isSpecial) ball.style.color = '#000'; // White ball, black text
+                else ball.style.color = '#fff'; // Default to white text
+                
+
                 container.appendChild(ball);
             });
+            lottoDisplay.appendChild(container);
         }
-        lottoDisplay.appendChild(container);
     }
+
+    function getLotto645Color(number) {
+        if (number <= 10) return '#fbc400'; // 노란색
+        if (number <= 20) return '#69c8f2'; // 파란색
+        if (number <= 30) return '#ff7272'; // 빨간색
+        if (number <= 40) return '#aaa';    // 회색
+        return '#b0d840'; // 녹색
+    }
+
 });

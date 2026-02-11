@@ -21,7 +21,7 @@
 
 body {
     font-family: 'Nanum Pen Script', sans-serif;
-    font-size: 1.2rem; /* Increased base font size for better readability */
+    font-size: 1.2rem; 
     margin: 0;
     background-color: var(--background-color);
     color: var(--text-color);
@@ -45,7 +45,7 @@ header {
 
 header h1 {
     margin: 0;
-    font-family: 'Nanum Pen Script', sans-serif; /* Applied new font */
+    font-family: 'Nanum Pen Script', sans-serif;
     font-size: 2.8rem; 
     font-weight: 700;
     color: var(--primary-color);
@@ -112,28 +112,25 @@ section.active {
     display: block; /* Shown when active */
 }
 
-/* General Content Headers */
 h2 {
     color: var(--primary-color);
     border-bottom: 2px solid var(--primary-color);
     padding-bottom: 10px;
     margin-top: 0;
     font-weight: 700;
-    font-size: 2.2rem; /* Adjusted size for the new font */
+    font-size: 2.2rem;
 }
 
-/* Specific Section Styles... */
+/* Home Section */
 section#home {
     padding: 0;
     background: transparent;
     box-shadow: none;
 }
-
 #home-image-container {
     width: 100%;
     margin-bottom: 20px;
 }
-
 #home-image {
     width: 100%;
     height: auto;
@@ -141,12 +138,12 @@ section#home {
     border-radius: 8px;
     box-shadow: 0 4px 8px var(--shadow-color);
 }
-
 #home-text-container {
     padding: 20px;
     text-align: center;
 }
 
+/* Lotto Section */
 #lotto-controls {
     display: flex;
     flex-wrap: wrap;
@@ -154,7 +151,6 @@ section#home {
     justify-content: center;
     margin-bottom: 20px;
 }
-
 .lotto-group {
     border: 1px solid var(--border-color);
     border-radius: 8px;
@@ -162,29 +158,25 @@ section#home {
     text-align: center;
     min-width: 250px;
 }
-
 .lotto-group h3 {
     margin-top: 0;
     color: var(--secondary-color);
 }
-
 .lotto-button, #upload-button, #add-link-button, form button {
     background-color: var(--primary-color);
     color: white;
     border: none;
     padding: 10px 15px;
     border-radius: 5px;
-    font-size: 1.1rem; /* Adjusted font size */
+    font-size: 1.1rem;
     cursor: pointer;
-    font-family: 'Nanum Pen Script', sans-serif; /* Ensure font is applied */
+    font-family: 'Nanum Pen Script', sans-serif;
     transition: background-color 0.3s, transform 0.2s;
 }
-
 .lotto-button:hover, #upload-button:hover, #add-link-button:hover, form button:hover {
     background-color: #0056b3;
     transform: translateY(-1px);
 }
-
 #lotto-display-area {
     text-align: center;
     padding: 20px;
@@ -195,22 +187,40 @@ section#home {
     justify-content: center;
     align-items: center;
 }
+.lotto-numbers-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+.lotto-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.lotto-special-number {
+    background-color: #e44d26;
+}
 
-/* ... (rest of the existing styles) ... */
-
+/* Gallery Section */
 #gallery-container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 15px;
 }
-
 .gallery-item {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 4px var(--shadow-color);
 }
-
 .gallery-item img {
     width: 100%;
     height: 150px;
@@ -218,26 +228,68 @@ section#home {
     display: block;
     transition: transform 0.3s ease;
 }
-
 .gallery-item img:hover {
     transform: scale(1.05);
 }
 
+/* Info Section */
+.info-links ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.info-links li {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+    overflow: hidden; 
+}
+
+.link-item-content {
+    flex-grow: 1;
+    transition: transform 0.3s ease;
+}
+
+.link-item-content a {
+    text-decoration: none;
+    color: var(--text-color);
+}
+
+.delete-link-button {
+    background-color: #e44d26;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    position: absolute;
+    right: -80px; 
+    top: 50%;
+    transform: translateY(-50%);
+    transition: right 0.3s ease;
+}
+
+.info-links li.revealed .delete-link-button {
+    right: 15px;
+}
+
+
 #add-link-form-container, footer #contact {
     max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
+    margin: 40px auto 0 auto; 
 }
 
 .form-group {
     margin-bottom: 15px;
 }
-
 .form-group label {
     display: block;
     margin-bottom: 5px;
 }
-
 .form-group input, .form-group textarea, .form-group select {
     width: 100%;
     padding: 10px;
@@ -250,6 +302,7 @@ section#home {
     font-size: 1.1rem;
 }
 
+/* Footer */
 footer {
     text-align: center;
     padding: 20px;
@@ -259,94 +312,25 @@ footer {
     margin-top: 40px;
 }
 
-
-/* Responsive Design for Mobile */
+/* Responsive Design */
 @media (max-width: 768px) {
-    body {
-        font-size: 1.3rem; /* Increase font size slightly more on mobile for readability */
-    }
-
-    header {
-        flex-direction: column;
-        padding: 1rem;
-        position: relative; /* Allow positioning of buttons */
-    }
-
-    header h1 {
-        font-size: 2.5rem; /* Adjust heading size */
-        margin-bottom: 1rem;
-    }
-
-    nav ul {
-        flex-direction: column;
-        width: 100%;
-    }
-
-    nav ul li {
-        margin: 8px 0;
-        text-align: center;
-        background-color: var(--card-background);
-        border-radius: 5px;
-        box-shadow: 0 2px 4px var(--shadow-color);
-    }
-
-    .header-buttons {
-        position: absolute;
-        top: 15px;
-        right: 15px;
-    }
-
-    main {
-        padding: 10px;
-        margin: 10px auto;
-    }
-
-    section {
-        padding: 15px;
-    }
-
-    h2 {
-        font-size: 2rem;
-    }
-
-    #lotto-controls, #add-link-form {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .lotto-group {
-        min-width: unset;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    #gallery-container {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 10px;
-    }
-
-    .gallery-item img {
-        height: 110px;
-    }
-
-    #upload-container {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    #upload-container input, #upload-button {
-        width: 100%;
-        box-sizing: border-box;
-    }
-     #upload-container input {
-        margin-bottom: 10px;
-    }
-
-    #info .info-links {
-        grid-template-columns: 1fr;
-    }
-
-    footer #contact {
-        padding: 10px 0;
-    }
+    body { font-size: 1.3rem; }
+    header { flex-direction: column; padding: 1rem; position: relative; }
+    header h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+    nav ul { flex-direction: column; width: 100%; }
+    nav ul li { margin: 8px 0; text-align: center; background-color: var(--card-background); border-radius: 5px; box-shadow: 0 2px 4px var(--shadow-color); }
+    .header-buttons { position: absolute; top: 15px; right: 15px; }
+    main { padding: 10px; margin: 10px auto; }
+    section { padding: 15px; }
+    h2 { font-size: 2rem; }
+    #lotto-controls, #add-link-form { flex-direction: column; align-items: stretch; }
+    .lotto-group { min-width: unset; width: 100%; box-sizing: border-box; }
+    .lotto-number { width: 40px; height: 40px; font-size: 1.2rem; }
+    #gallery-container { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+    .gallery-item img { height: 110px; }
+    #upload-container { flex-direction: column; align-items: stretch; }
+    #upload-container input, #upload-button { width: 100%; box-sizing: border-box; }
+    #upload-container input { margin-bottom: 10px; }
+    #info .info-links { grid-template-columns: 1fr; }
+    footer #contact { padding: 10px 0; }
 }
