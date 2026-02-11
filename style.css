@@ -285,6 +285,38 @@ h2 {
     transform: scale(1.05);
 }
 
+/* Info Section */
+#info .info-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+#info .info-links h3 {
+    color: var(--secondary-color);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+}
+
+#info .info-links ul {
+    list-style: none;
+    padding: 0;
+}
+
+#info .info-links ul li {
+    margin-bottom: 10px;
+}
+
+#info .info-links ul li a {
+    text-decoration: none;
+    color: var(--primary-color);
+    transition: color 0.3s;
+}
+
+#info .info-links ul li a:hover {
+    color: #0056b3;
+}
+
 /* Contact Form in Footer */
 .form-group {
     margin-bottom: 15px;
