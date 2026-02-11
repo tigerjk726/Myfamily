@@ -172,13 +172,13 @@
     <script src="main.js" type="module"></script>
     <script>
     var disqus_config = function () {
-    this.page.url = "https://4ce8d94b.myfamily-dxv.pages.dev/";
+    this.page.url = window.location.href;
     this.page.identifier = "myfamily-3";
     };
     
     (function() { // DON'T EDIT BELOW THIS LINE
     var d = document, s = d.createElement('script');
-    s.src = 'https.myfamily-3.disqus.com/embed.js';
+    s.src = 'https://myfamily-3.disqus.com/embed.js';
     s.setAttribute('data-timestamp', +new Date());
     (d.head || d.body).appendChild(s);
     })();
