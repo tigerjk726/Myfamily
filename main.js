@@ -66,21 +66,37 @@ let calendar; // To hold the calendar instance
 
 function initializeCalendar() {
     const calendarEl = document.getElementById('calendar-container');
-    if (!calendarEl || calendar) {
+    if (!calendarEl || calendar) { // If no container or calendar already exists, do nothing
         return;
     }
-    // Temporarily removed Google Calendar integration to isolate the core issue.
-    // The goal is to first render a blank calendar successfully.
+
+    // Check if API key and Calendar ID are set
+    if (GOOGLE_CALENDAR_API_KEY === 'YOUR_API_KEY' || GOOGLE_CALENDAR_ID === 'YOUR_CALENDAR_ID') {
+        calendarEl.innerHTML = '<p style="text-align: center; padding: 20px;">Please configure Google Calendar API Key and Calendar ID in main.js</p>';
+        return;
+    }
+
     calendar = new window.FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
             right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        googleCalendarApiKey: GOOGLE_CALENDAR_API_KEY,
+        events: {
+            googleCalendarId: GOOGLE_CALENDAR_ID
+        },
+        eventDidMount: function(info) {
+          // You can customize event rendering here if needed
+        },
+        loading: function(isLoading) {
+            // You can show/hide a loading indicator here
         }
     });
     calendar.render();
 }
+
 
 // --- Photo Gallery Logic (Cloudinary + Firestore) ---
 
@@ -188,7 +204,9 @@ function handleHashChange() {
             l.classList.add('active');
         }
     });
+
     if (hash === 'calendar') {
+        // Use a small timeout to ensure the section is visible before rendering
         setTimeout(initializeCalendar, 0);
     }
     if (hash === 'gallery') {
