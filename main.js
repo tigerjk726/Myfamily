@@ -34,6 +34,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadButton = document.getElementById('upload-button');
     const uploadProgress = document.getElementById('upload-progress');
     const galleryContainer = document.getElementById('gallery-container');
+    // Info Link Elements
+    const addLinkForm = document.getElementById('add-link-form');
+    const linkTitle = document.getElementById('link-title');
+    const linkUrl = document.getElementById('link-url');
+    const linkCategory = document.getElementById('link-category');
+    const linkLists = {
+        News: document.getElementById('news-links-list'),
+        Government: document.getElementById('government-links-list'),
+        Education: document.getElementById('education-links-list'),
+        Fun: document.getElementById('fun-links-list')
+    };
+
 
     // --- YouTube Player --- 
     let player;
@@ -44,22 +56,15 @@ document.addEventListener('DOMContentLoaded', () => {
             height: '0',
             width: '0',
             videoId: YOUTUBE_VIDEO_ID,
+            playerVars: { 'autoplay': 0, 'controls': 0, 'loop': 1, 'playlist': YOUTUBE_VIDEO_ID },
             events: {
-                'onReady': onPlayerReady,
-                'onStateChange': onPlayerStateChange
+                'onReady': onPlayerReady
             }
         });
     }
 
     function onPlayerReady(event) {
-        // The player is ready
-    }
-
-    function onPlayerStateChange(event) {
-        // Loop the video when it ends
-        if (event.data === YT.PlayerState.ENDED) {
-            player.playVideo();
-        }
+        // Player is ready
     }
 
     musicToggle.addEventListener('click', () => {
@@ -104,82 +109,125 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    let calendar; // To hold the calendar instance
+    let calendar;
 
     function initializeCalendar() {
         const calendarEl = document.getElementById('calendar-container');
-        if (!calendarEl || calendar) { // If no container or calendar already exists, do nothing
-            return;
-        }
-
-        // Check if API key and Calendar ID are set
+        if (!calendarEl || calendar) return;
         if (GOOGLE_CALENDAR_API_KEY === 'YOUR_API_KEY' || GOOGLE_CALENDAR_ID === 'YOUR_CALENDAR_ID') {
-            calendarEl.innerHTML = '<p style="text-align: center; padding: 20px;">Please configure Google Calendar API Key and Calendar ID in main.js</p>';
+            calendarEl.innerHTML = '<p>Please configure Google Calendar API Key and Calendar ID.</p>';
             return;
         }
-
         calendar = new window.FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            },
+            headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
             googleCalendarApiKey: GOOGLE_CALENDAR_API_KEY,
-            events: {
-                googleCalendarId: GOOGLE_CALENDAR_ID
-            },
-            eventDidMount: function(info) {
-              // You can customize event rendering here if needed
-            },
-            loading: function(isLoading) {
-                // You can show/hide a loading indicator here
-            }
+            events: { googleCalendarId: GOOGLE_CALENDAR_ID }
         });
         calendar.render();
     }
 
+    // --- Useful Links (Info Section) Logic ---
+    const linksCollection = db.collection('useful_links');
 
-    // --- Photo Gallery Logic (Cloudinary + Firestore) ---
+    // 1. Add new link
+    addLinkForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const title = linkTitle.value.trim();
+        const url = linkUrl.value.trim();
+        const category = linkCategory.value;
 
-    // 1. Function to load image URLs from Firestore and display them
-    async function loadAndDisplayImages() {
-        galleryContainer.innerHTML = ''; // Clear gallery
-        try {
-            const snapshot = await db.collection('images').orderBy('createdAt', 'desc').get();
-            if (snapshot.empty) {
-                console.log('No images found in Firestore.');
-                return;
-            }
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if (data.url) {
-                    displayImage(data.url);
-                }
-            });
-        } catch (error) {
-            console.error("Error getting images from Firestore: ", error);
-        }
-    }
-
-    // 2. Function to create and append an image element to the gallery
-    function displayImage(url) {
-        const galleryItem = document.createElement('div');
-        galleryItem.className = 'gallery-item';
-        const img = document.createElement('img');
-        img.src = url;
-        img.alt = "Uploaded family photo";
-        galleryItem.appendChild(img);
-        galleryContainer.appendChild(galleryItem);
-    }
-
-    // 3. Function to handle the file upload process to Cloudinary
-    function handleUpload() {
-        const file = fileInput.files[0];
-        if (!file) {
-            alert("Please select a file first!");
+        if (title === '' || url === '') {
+            alert('Please fill in both Title and URL.');
             return;
         }
+
+        try {
+            await linksCollection.add({
+                title,
+                url,
+                category,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            addLinkForm.reset();
+            loadAndDisplayLinks(); // Refresh the list
+        } catch (error) {
+            console.error("Error adding link: ", error);
+            alert('Failed to add link.');
+        }
+    });
+
+    // 2. Load and display all links
+    async function loadAndDisplayLinks() {
+        // Clear existing lists
+        Object.values(linkLists).forEach(list => { list.innerHTML = ''; });
+
+        try {
+            const snapshot = await linksCollection.orderBy('createdAt').get();
+            snapshot.forEach(doc => {
+                displayLink(doc.id, doc.data());
+            });
+        } catch (error) {
+            console.error("Error loading links: ", error);
+        }
+    }
+
+    // 3. Display a single link
+    function displayLink(id, data) {
+        const list = linkLists[data.category];
+        if (!list) return; // Category list not found
+
+        const li = document.createElement('li');
+        li.setAttribute('data-id', id);
+
+        const a = document.createElement('a');
+        a.href = data.url;
+        a.textContent = data.title;
+        a.target = '_blank';
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '🗑️';
+        deleteBtn.className = 'delete-link-button';
+        deleteBtn.addEventListener('click', async () => {
+            if (confirm(`Are you sure you want to delete "${data.title}"?`)) {
+                try {
+                    await linksCollection.doc(id).delete();
+                    loadAndDisplayLinks(); // Refresh
+                } catch (error) {
+                    console.error("Error deleting link: ", error);
+                    alert("Failed to delete link.");
+                }
+            }
+        });
+
+        li.appendChild(a);
+        li.appendChild(deleteBtn);
+        list.appendChild(li);
+    }
+
+    // --- Photo Gallery Logic (Cloudinary + Firestore) ---
+    async function loadAndDisplayImages() {
+        galleryContainer.innerHTML = '';
+        try {
+            const snapshot = await db.collection('images').orderBy('createdAt', 'desc').get();
+            snapshot.forEach(doc => displayImage(doc.data().url));
+        } catch (error) {
+            console.error("Error getting images: ", error);
+        }
+    }
+
+    function displayImage(url) {
+        const item = document.createElement('div');
+        item.className = 'gallery-item';
+        const img = document.createElement('img');
+        img.src = url;
+        item.appendChild(img);
+        galleryContainer.appendChild(item);
+    }
+
+    uploadButton.addEventListener('click', () => {
+        const file = fileInput.files[0];
+        if (!file) { alert("Please select a file!"); return; }
 
         const formData = new FormData();
         formData.append('file', file);
@@ -187,54 +235,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const xhr = new XMLHttpRequest();
         xhr.open('POST', CLOUDINARY_URL, true);
-
-        xhr.upload.onprogress = function(e) {
+        xhr.upload.onprogress = e => {
             if (e.lengthComputable) {
                 const progress = (e.loaded / e.total) * 100;
                 uploadProgress.style.display = 'block';
                 uploadProgress.value = progress;
             }
         };
-
-        xhr.onload = function() {
+        xhr.onload = () => {
             uploadProgress.style.display = 'none';
             if (xhr.status === 200) {
-                const response = JSON.parse(xhr.responseText);
-                const imageUrl = response.secure_url;
-
-                // Save the URL to Firestore
-                db.collection('images').add({
-                    url: imageUrl,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                })
-                .then(() => {
-                    alert('Photo uploaded successfully!');
-                    fileInput.value = '';
-                    loadAndDisplayImages(); // Refresh gallery
-                })
-                .catch((error) => {
-                    console.error("Error saving image URL to Firestore: ", error);
-                    alert('Upload to Cloudinary succeeded, but failed to save to database.');
-                });
-
-            } else {
-                console.error("Upload to Cloudinary failed:", xhr.responseText);
-                alert(`Upload failed. Status: ${xhr.status}`);
-            }
+                const res = JSON.parse(xhr.responseText);
+                db.collection('images').add({ url: res.secure_url, createdAt: firebase.firestore.FieldValue.serverTimestamp() })
+                    .then(() => { fileInput.value = ''; loadAndDisplayImages(); });
+            } else { alert('Upload failed.'); }
         };
-
-        xhr.onerror = function() {
-            console.error("Upload failed due to a network error.");
-            alert('Upload failed due to a network error.');
-            uploadProgress.style.display = 'none';
-        };
-
+        xhr.onerror = () => { alert('Upload error.'); };
         xhr.send(formData);
-    }
-
-    // Add event listener to the upload button
-    uploadButton.addEventListener('click', handleUpload);
-
+    });
 
     // --- Hash-based Routing ---
     function handleHashChange() {
@@ -242,24 +260,18 @@ document.addEventListener('DOMContentLoaded', () => {
         showSection(hash);
         links.forEach(l => {
             l.classList.remove('active');
-            if (l.getAttribute('href').substring(1) === hash) {
-                l.classList.add('active');
-            }
+            if (l.getAttribute('href').substring(1) === hash) l.classList.add('active');
         });
 
-        if (hash === 'calendar') {
-            // Use a small timeout to ensure the section is visible before rendering
-            setTimeout(initializeCalendar, 0);
-        }
-        if (hash === 'gallery') {
-            loadAndDisplayImages(); // Load images when gallery is viewed
-        }
+        if (hash === 'calendar') setTimeout(initializeCalendar, 0);
+        if (hash === 'gallery') loadAndDisplayImages();
+        if (hash === 'info') loadAndDisplayLinks(); // Load links for Info section
     }
 
     window.addEventListener('hashchange', handleHashChange);
-    handleHashChange(); // Initial load based on hash
+    handleHashChange(); // Initial load
 
-    // --- Lottery Generator --- (This code remains unchanged)
+    // --- Lottery Generator ---
     lottoButtons.forEach(button => {
         button.addEventListener('click', () => {
             const type = button.dataset.lottoType;
@@ -271,56 +283,35 @@ document.addEventListener('DOMContentLoaded', () => {
     function generateLottoNumbers(type) {
         let balls = [];
         switch (type) {
-            case 'korea-645':
-                balls = [{ count: 6, max: 45, color: '#fbc400' }];
-                break;
+            case 'korea-645': balls = [{ count: 6, max: 45, color: '#fbc400' }]; break;
             case 'korea-720':
                 const group = Math.floor(Math.random() * 5) + 1;
                 let rest = generateUniqueNumbers(6, 0, 9).map(n => n.val).join('');
                 return { type: 'structured', numbers: [group, ...rest.split('')] };
-            case 'usa-powerball':
-                balls = [
-                    { count: 5, max: 69, color: '#e44d26', textColor: '#fff' },
-                    { count: 1, max: 26, color: '#fbc400', textColor: '#fff' }
-                ];
-                break;
-            case 'usa-megamillions':
-                balls = [
-                    { count: 5, max: 70, color: '#2c3e50', textColor: '#fff' },
-                    { count: 1, max: 25, color: '#fbc400', textColor: '#fff' }
-                ];
-                break;
-            case 'canada-649':
-                balls = [{ count: 6, max: 49, color: '#5cb85c', textColor: '#fff' }];
-                break;
-            case 'canada-lottomax':
-                balls = [{ count: 7, max: 50, color: '#5bc0de', textColor: '#fff' }];
-                break;
+            case 'usa-powerball': balls = [{ count: 5, max: 69, color: '#e44d26' }, { count: 1, max: 26, color: '#fbc400' }]; break;
+            case 'usa-megamillions': balls = [{ count: 5, max: 70, color: '#2c3e50' }, { count: 1, max: 25, color: '#fbc400' }]; break;
+            case 'canada-649': balls = [{ count: 6, max: 49, color: '#5cb85c' }]; break;
+            case 'canada-lottomax': balls = [{ count: 7, max: 50, color: '#5bc0de' }]; break;
         }
-
-        const generated = balls.map(b => generateUniqueNumbers(b.count, 1, b.max, b.color, b.textColor));
+        const generated = balls.map(b => generateUniqueNumbers(b.count, 1, b.max, b.color));
         return { type: 'balls', numbers: generated.flat() };
     }
 
-    function generateUniqueNumbers(count, min, max, color, textColor) {
+    function generateUniqueNumbers(count, min, max, color) {
         let numbers = new Set();
-        while (numbers.size < count) {
-            numbers.add(Math.floor(Math.random() * (max - min + 1)) + min);
-        }
-        return Array.from(numbers).sort((a, b) => a - b).map(n => ({ val: n, color, textColor }));
+        while (numbers.size < count) numbers.add(Math.floor(Math.random() * (max - min + 1)) + min);
+        return Array.from(numbers).sort((a, b) => a - b).map(val => ({ val, color, textColor: '#fff' }));
     }
 
     function displayLottoNumbers(result, type) {
         lottoDisplay.innerHTML = '';
         const container = document.createElement('div');
         container.className = 'lotto-numbers-container';
-
         if (result.type === 'structured') {
             const groupDiv = document.createElement('div');
             groupDiv.className = 'pension-lotto-group';
             groupDiv.innerHTML = `<strong>${result.numbers[0]}조</strong>`;
             container.appendChild(groupDiv);
-
             const digitsDiv = document.createElement('div');
             digitsDiv.className = 'pension-lotto-digits';
             result.numbers.slice(1).forEach(digit => {
@@ -330,17 +321,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 digitsDiv.appendChild(digitSpan);
             });
             container.appendChild(digitsDiv);
-
-        } else { // type === 'balls'
+        } else {
             result.numbers.forEach(num => {
                 const ball = document.createElement('div');
                 ball.className = 'number-ball';
                 ball.textContent = num.val;
                 ball.style.backgroundColor = num.color || '#ddd';
                 ball.style.color = num.textColor || '#333';
-                if (document.documentElement.getAttribute('data-theme') === 'dark' && num.color === '#fff') {
-                    ball.style.color = '#1e1e1e';
-                }
                 container.appendChild(ball);
             });
         }

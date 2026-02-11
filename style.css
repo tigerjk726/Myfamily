@@ -246,7 +246,7 @@ h2 {
     align-items: center;
 }
 
-#upload-button {
+#upload-button, #add-link-button {
     background-color: var(--primary-color);
     color: white;
     border: none;
@@ -257,7 +257,7 @@ h2 {
     transition: background-color 0.3s;
 }
 
-#upload-button:hover {
+#upload-button:hover, #add-link-button:hover {
     background-color: #0056b3;
 }
 
@@ -292,6 +292,30 @@ h2 {
 }
 
 /* Info Section */
+#add-link-form-container {
+    margin-bottom: 30px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+#add-link-form-container h3 {
+    margin-top: 0;
+    color: var(--secondary-color);
+}
+
+#add-link-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-end;
+}
+
+#add-link-form .form-group {
+    flex-grow: 1;
+    margin-bottom: 0;
+}
+
 #info .info-links {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -311,6 +335,9 @@ h2 {
 
 #info .info-links ul li {
     margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 #info .info-links ul li a {
@@ -323,6 +350,20 @@ h2 {
     color: #0056b3;
 }
 
+.delete-link-button {
+    background: none;
+    border: none;
+    color: var(--secondary-color);
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: none; /* Hidden by default */
+}
+
+#info .info-links ul li:hover .delete-link-button {
+    display: inline; /* Show on hover */
+}
+
+
 /* Contact Form in Footer */
 .form-group {
     margin-bottom: 15px;
@@ -333,8 +374,9 @@ h2 {
     margin-bottom: 5px;
 }
 
-.form-group input,
-.form-group textarea {
+.form-group input, 
+.form-group textarea,
+.form-group select {
     width: 100%;
     padding: 10px;
     border: 1px solid var(--border-color);
