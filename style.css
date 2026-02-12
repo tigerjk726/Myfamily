@@ -280,7 +280,7 @@ section#home {
 
 #add-link-form-container, footer #contact {
     max-width: 600px;
-    margin: 40px auto 0 auto; 
+    margin: 40px auto; 
 }
 
 .form-group {
