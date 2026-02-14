@@ -22,6 +22,7 @@ A modern, clean, and family-friendly website with features for generating lotter
 ### 2. Photo Gallery
 
 *   **Functionality:** Allows users to upload photos, which are then displayed in a gallery.
+*   **Image Expansion:** Clicking on a photo in the gallery opens a larger version in a modal view.
 *   **UI:** A file input for selecting images, an upload button, a progress bar, and a gallery display area.
 *   **Backend:**
     *   **Cloudinary:** Used for storing and serving the uploaded image files.
@@ -58,6 +59,7 @@ A modern, clean, and family-friendly website with features for generating lotter
 4.  **Implement Gallery Display:**
     *   Write the `loadAndDisplayImages` function to fetch image documents from the Firestore `images` collection.
     *   Render the images in the gallery, ordered by creation date.
+    *   Add an image expansion feature to view photos in a modal.
 
 ### Phase 3: Deployment and Version Control
 

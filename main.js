@@ -46,6 +46,15 @@ document.addEventListener('DOMContentLoaded', () => {
         Fun: document.getElementById('fun-links-list')
     };
 
+    // --- Modal Elements ---
+    const modal = document.getElementById('image-modal');
+    const modalImg = document.getElementById('modal-image');
+    const closeButton = document.getElementsByClassName('close-button')[0];
+
+    closeButton.onclick = function() {
+        modal.style.display = "none";
+    }
+
 
     // --- YouTube Player --- 
     let player;
@@ -223,6 +232,11 @@ document.addEventListener('DOMContentLoaded', () => {
         img.src = url;
         item.appendChild(img);
         galleryContainer.appendChild(item);
+
+        item.addEventListener('click', function() {
+            modal.style.display = "block";
+            modalImg.src = this.getElementsByTagName('img')[0].src;
+        });
     }
 
     uploadButton.addEventListener('click', () => {
