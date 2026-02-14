@@ -53,9 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const recommendationField1Group = document.getElementById('recommendation-field1-group');
     const recommendationField1Label = recommendationField1Group.querySelector('label');
     const recommendationField1 = document.getElementById('recommendation-field1');
-    const recommendationField2Group = document.getElementById('recommendation-field2-group');
-    const recommendationField2Label = recommendationField2Group.querySelector('label');
-    const recommendationField2 = document.getElementById('recommendation-field2');
     const recommendationLists = {
         book: document.getElementById('book-list'),
         movie: document.getElementById('movie-list'),
@@ -235,24 +232,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateRecommendationForm() {
         const category = recommendationCategory.value;
-        if (category === 'book') {
-            recommendationField1Label.textContent = 'Author:';
-            recommendationField1.placeholder = 'e.g., J.K. Rowling';
-            recommendationField2Label.textContent = 'Comment:';
-            recommendationField2.placeholder = 'e.g., A fantastic read!';
-        } else if (category === 'movie') {
-            recommendationField1Label.textContent = 'Summary:';
-            recommendationField1.placeholder = 'e.g., A summary of the movie.';
-            recommendationField2Group.style.display = 'none';
-        } else if (category === 'music') {
-            recommendationField1Label.textContent = 'Singer:';
-            recommendationField1.placeholder = 'e.g., Adele';
-            recommendationField2Group.style.display = 'none';
-        }
-
-        if (category !== 'movie' && category !== 'music') {
-            recommendationField2Group.style.display = 'block';
-        }
+        recommendationField1Label.textContent = 'Details:';
+        recommendationField1.placeholder = `Enter details for the ${category}`;
+        recommendationField2Group.style.display = 'none';
     }
 
     recommendationCategory.addEventListener('change', updateRecommendationForm);
@@ -261,25 +243,21 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const category = recommendationCategory.value;
         const title = recommendationTitle.value.trim();
+        const details = recommendationField1.value.trim();
+
+        if (title === '' || details === '') {
+            alert('Please fill in both Title and Details.');
+            return;
+        }
+
         let data = {
             category,
             title,
+            details,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        if (category === 'book') {
-            data.author = recommendationField1.value.trim();
-            data.comment = recommendationField2.value.trim();
-        } else if (category === 'movie') {
-            data.summary = recommendationField1.value.trim();
-        } else if (category === 'music') {
-            data.singer = recommendationField1.value.trim();
-        }
-
         try {
-            // This is where you would call a function to get an image from Google
-            // For now, we will use a placeholder.
-            data.imageUrl = 'https://via.placeholder.com/100';
             await recommendationsCollection.add(data);
             recommendationForm.reset();
             loadAndDisplayRecommendations();
@@ -295,39 +273,35 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const snapshot = await recommendationsCollection.orderBy('createdAt', 'desc').get();
             snapshot.forEach(doc => {
-                displayRecommendation(doc.id, doc.data());
+                const list = recommendationLists[doc.data().category];
+                if (!list) return;
+
+                const item = document.createElement('div');
+                item.className = 'recommendation-item';
+                
+                const title = document.createElement('h4');
+                title.textContent = doc.data().title;
+
+                const date = document.createElement('p');
+                date.className = 'recommendation-date';
+                const createdAt = doc.data().createdAt.toDate();
+                date.textContent = createdAt.toLocaleDateString();
+
+                item.appendChild(title);
+                item.appendChild(date);
+
+                item.addEventListener('click', () => showRecommendationDetails(doc.data()));
+                list.appendChild(item);
             });
         } catch (error) {
             console.error("Error loading recommendations: ", error);
         }
     }
 
-    function displayRecommendation(id, data) {
-        const list = recommendationLists[data.category];
-        if (!list) return;
-
-        const item = document.createElement('div');
-        item.className = 'recommendation-item';
-        item.setAttribute('data-id', id);
-
-        let content = `
-            <img src="${data.imageUrl}" alt="${data.title}">
-            <div class="recommendation-item-content">
-                <h4>${data.title}</h4>
-        `;
-
-        if (data.category === 'book') {
-            content += `<p><strong>Author:</strong> ${data.author}</p>`;
-            content += `<p>${data.comment}</p>`;
-        } else if (data.category === 'movie') {
-            content += `<p>${data.summary}</p>`;
-        } else if (data.category === 'music') {
-            content += `<p><strong>Singer:</strong> ${data.singer}</p>`;
-        }
-
-        content += `</div>`;
-        item.innerHTML = content;
-        list.appendChild(item);
+    function showRecommendationDetails(data) {
+        recommendationModalTitle.textContent = data.title;
+        recommendationModalDetails.textContent = data.details;
+        recommendationModal.style.display = 'block';
     }
     
     // --- Photo Gallery Logic (Cloudinary + Firestore) ---
