@@ -21,6 +21,7 @@
                 <li><a href="#calendar">Calendar</a></li>
                 <li><a href="#gallery">Gallery</a></li>
                 <li><a href="#info">Info</a></li>
+                <li><a href="#recommendation">Recommendation</a></li>
                 <li><a href="#comments">Comments</a></li>
             </ul>
         </nav>
@@ -135,6 +136,50 @@
             </div>        
         </section>
         
+        <section id="recommendation">
+            <h2>Recommendations</h2>
+            <div id="add-recommendation-form-container">
+                <h3>Add a New Recommendation</h3>
+                <form id="add-recommendation-form">
+                    <div class="form-group">
+                        <label for="recommendation-category">Category:</label>
+                        <select id="recommendation-category" required>
+                            <option value="book">Book</option>
+                            <option value="movie">Movie</option>
+                            <option value="music">Music</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="recommendation-title">Title:</label>
+                        <input type="text" id="recommendation-title" required>
+                    </div>
+                    <div class="form-group" id="recommendation-field1-group">
+                        <label for="recommendation-field1">Author:</label>
+                        <input type="text" id="recommendation-field1">
+                    </div>
+                    <div class="form-group" id="recommendation-field2-group">
+                        <label for="recommendation-field2">Comment:</label>
+                        <textarea id="recommendation-field2" rows="3"></textarea>
+                    </div>
+                    <button type="submit" id="add-recommendation-button">Add Recommendation</button>
+                </form>
+            </div>
+            <div class="recommendations-container">
+                <div id="recommendation-book">
+                    <h3>Books</h3>
+                    <div id="book-list" class="recommendation-list"></div>
+                </div>
+                <div id="recommendation-movie">
+                    <h3>Movies</h3>
+                    <div id="movie-list" class="recommendation-list"></div>
+                </div>
+                <div id="recommendation-music">
+                    <h3>Music</h3>
+                    <div id="music-list" class="recommendation-list"></div>
+                </div>
+            </div>
+        </section>
+
         <section id="comments">
             <h2>Comments</h2>
             <div id="disqus_thread"></div>

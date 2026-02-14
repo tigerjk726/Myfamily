@@ -46,6 +46,22 @@ document.addEventListener('DOMContentLoaded', () => {
         Fun: document.getElementById('fun-links-list')
     };
 
+    // Recommendation Elements
+    const recommendationForm = document.getElementById('add-recommendation-form');
+    const recommendationCategory = document.getElementById('recommendation-category');
+    const recommendationTitle = document.getElementById('recommendation-title');
+    const recommendationField1Group = document.getElementById('recommendation-field1-group');
+    const recommendationField1Label = recommendationField1Group.querySelector('label');
+    const recommendationField1 = document.getElementById('recommendation-field1');
+    const recommendationField2Group = document.getElementById('recommendation-field2-group');
+    const recommendationField2Label = recommendationField2Group.querySelector('label');
+    const recommendationField2 = document.getElementById('recommendation-field2');
+    const recommendationLists = {
+        book: document.getElementById('book-list'),
+        movie: document.getElementById('movie-list'),
+        music: document.getElementById('music-list'),
+    };
+
     // --- Modal Elements ---
     const modal = document.getElementById('image-modal');
     const modalImg = document.getElementById('modal-image');
@@ -214,6 +230,106 @@ document.addEventListener('DOMContentLoaded', () => {
         list.appendChild(li);
     }
 
+    // --- Recommendations Logic ---
+    const recommendationsCollection = db.collection('recommendations');
+
+    function updateRecommendationForm() {
+        const category = recommendationCategory.value;
+        if (category === 'book') {
+            recommendationField1Label.textContent = 'Author:';
+            recommendationField1.placeholder = 'e.g., J.K. Rowling';
+            recommendationField2Label.textContent = 'Comment:';
+            recommendationField2.placeholder = 'e.g., A fantastic read!';
+        } else if (category === 'movie') {
+            recommendationField1Label.textContent = 'Summary:';
+            recommendationField1.placeholder = 'e.g., A summary of the movie.';
+            recommendationField2Group.style.display = 'none';
+        } else if (category === 'music') {
+            recommendationField1Label.textContent = 'Singer:';
+            recommendationField1.placeholder = 'e.g., Adele';
+            recommendationField2Group.style.display = 'none';
+        }
+
+        if (category !== 'movie' && category !== 'music') {
+            recommendationField2Group.style.display = 'block';
+        }
+    }
+
+    recommendationCategory.addEventListener('change', updateRecommendationForm);
+
+    recommendationForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const category = recommendationCategory.value;
+        const title = recommendationTitle.value.trim();
+        let data = {
+            category,
+            title,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        if (category === 'book') {
+            data.author = recommendationField1.value.trim();
+            data.comment = recommendationField2.value.trim();
+        } else if (category === 'movie') {
+            data.summary = recommendationField1.value.trim();
+        } else if (category === 'music') {
+            data.singer = recommendationField1.value.trim();
+        }
+
+        try {
+            // This is where you would call a function to get an image from Google
+            // For now, we will use a placeholder.
+            data.imageUrl = 'https://via.placeholder.com/100';
+            await recommendationsCollection.add(data);
+            recommendationForm.reset();
+            loadAndDisplayRecommendations();
+        } catch (error) {
+            console.error("Error adding recommendation: ", error);
+            alert('Failed to add recommendation.');
+        }
+    });
+
+    async function loadAndDisplayRecommendations() {
+        Object.values(recommendationLists).forEach(list => { list.innerHTML = ''; });
+
+        try {
+            const snapshot = await recommendationsCollection.orderBy('createdAt', 'desc').get();
+            snapshot.forEach(doc => {
+                displayRecommendation(doc.id, doc.data());
+            });
+        } catch (error) {
+            console.error("Error loading recommendations: ", error);
+        }
+    }
+
+    function displayRecommendation(id, data) {
+        const list = recommendationLists[data.category];
+        if (!list) return;
+
+        const item = document.createElement('div');
+        item.className = 'recommendation-item';
+        item.setAttribute('data-id', id);
+
+        let content = `
+            <img src="${data.imageUrl}" alt="${data.title}">
+            <div class="recommendation-item-content">
+                <h4>${data.title}</h4>
+        `;
+
+        if (data.category === 'book') {
+            content += `<p><strong>Author:</strong> ${data.author}</p>`;
+            content += `<p>${data.comment}</p>`;
+        } else if (data.category === 'movie') {
+            content += `<p>${data.summary}</p>`;
+        } else if (data.category === 'music') {
+            content += `<p><strong>Singer:</strong> ${data.singer}</p>`;
+        }
+
+        content += `</div>`;
+        item.innerHTML = content;
+        list.appendChild(item);
+    }
+    
     // --- Photo Gallery Logic (Cloudinary + Firestore) ---
     async function loadAndDisplayImages() {
         galleryContainer.innerHTML = '';
@@ -279,7 +395,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (hash === 'calendar') setTimeout(initializeCalendar, 0);
         if (hash === 'gallery') loadAndDisplayImages();
-        if (hash === 'info') loadAndDisplayLinks(); // Load links for Info section
+        if (hash === 'info') loadAndDisplayLinks();
+        if (hash === 'recommendation') {
+            updateRecommendationForm();
+            loadAndDisplayRecommendations();
+        }
     }
 
     window.addEventListener('hashchange', handleHashChange);

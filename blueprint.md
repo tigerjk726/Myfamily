@@ -29,9 +29,17 @@ A modern, clean, and family-friendly website with features for generating lotter
     *   **Firebase Firestore:** Used to store the URLs of the images hosted on Cloudinary, allowing for an organized and retrievable gallery list.
 *   **Upload Mechanism:** Uses Cloudinary's direct, unsigned upload functionality from the client-side.
 
-### 3. Navigation & Content Sections
+### 3. Recommendations
 
-*   **Functionality:** A navigation bar to switch between different sections of the website (Home, Lotto, Calendar, Gallery, Comments).
+*   **Functionality:** Allows users to add and view recommendations for books, movies, and music.
+*   **UI:** A form for adding new recommendations, with fields that dynamically change based on the selected category. Recommendations are displayed in separate lists for each category.
+*   **Backend:**
+    *   **Firebase Firestore:** Used to store the recommendation data.
+*   **Image Fetching:** Currently uses a placeholder image. Automatically fetching images from Google based on the title is a future goal.
+
+### 4. Navigation & Content Sections
+
+*   **Functionality:** A navigation bar to switch between different sections of the website (Home, Lotto, Calendar, Gallery, Recommendations, Comments).
 *   **Sections:** Includes a family calendar via Google Calendar, a comment section via Disqus, and a contact form via Formspree.
 
 ## Development Plan
@@ -61,7 +69,17 @@ A modern, clean, and family-friendly website with features for generating lotter
     *   Render the images in the gallery, ordered by creation date.
     *   Add an image expansion feature to view photos in a modal.
 
-### Phase 3: Deployment and Version Control
+### Phase 3: Recommendations Feature
+
+1.  **Update HTML:** Add the "Recommendations" section with a dynamic form and display lists.
+2.  **Update CSS:** Add styles for the new section to ensure a consistent look and feel.
+3.  **Update JS:**
+    *   Implement the logic to dynamically change the form based on the selected category.
+    *   Use Firestore to save and retrieve recommendation data.
+    *   Implement the display of recommendations.
+    *   Add a placeholder for image fetching, with a plan to implement automatic image fetching in the future.
+
+### Phase 4: Deployment and Version Control
 
 1.  **Deploy to Firebase Hosting:** Set up Firebase Hosting and deploy the website.
 2.  **Version Control with Git:** Maintain a Git repository, committing key changes and pushing to a remote (e.g., GitHub).
