@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- Firebase Config ---
     const firebaseConfig = {
@@ -9,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appId: "1:1043656805377:web:902d6f8dc9dcbb95be4400"
     };
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore(); // Initialize Firestore
+    const db = firebase.firestore();
 
     // --- Cloudinary Config ---
     const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dklpq8xg8/image/upload';
@@ -29,12 +30,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const sections = document.querySelectorAll('main section');
     const lottoButtons = document.querySelectorAll('.lotto-button');
     const lottoDisplay = document.getElementById('lotto-display-area');
-    // Gallery Elements
     const fileInput = document.getElementById('file-input');
     const uploadButton = document.getElementById('upload-button');
     const uploadProgress = document.getElementById('upload-progress');
     const galleryContainer = document.getElementById('gallery-container');
-    // Info Link Elements
     const addLinkForm = document.getElementById('add-link-form');
     const linkTitle = document.getElementById('link-title');
     const linkUrl = document.getElementById('link-url');
@@ -46,100 +45,91 @@ document.addEventListener('DOMContentLoaded', () => {
         Fun: document.getElementById('fun-links-list')
     };
 
-    // Recommendation Elements
-    const recommendationForm = document.getElementById('add-recommendation-form');
-    const recommendationCategory = document.getElementById('recommendation-category');
-    const recommendationTitle = document.getElementById('recommendation-title');
-    const recommendationField1Group = document.getElementById('recommendation-field1-group');
-    const recommendationField1Label = recommendationField1Group.querySelector('label');
-    const recommendationField1 = document.getElementById('recommendation-field1');
-    const recommendationLists = {
-        book: document.getElementById('book-list'),
-        movie: document.getElementById('movie-list'),
-        music: document.getElementById('music-list'),
-    };
-
     // --- Modal Elements ---
     const modal = document.getElementById('image-modal');
     const modalImg = document.getElementById('modal-image');
     const closeButton = document.getElementsByClassName('close-button')[0];
 
-    closeButton.onclick = function() {
-        modal.style.display = "none";
+    if(closeButton) {
+        closeButton.onclick = function() {
+            modal.style.display = "none";
+        }
     }
-
 
     // --- YouTube Player --- 
     let player;
-    let isPlayerReady = false;
     window.onYouTubeIframeAPIReady = function() {
-        isPlayerReady = true;
         player = new YT.Player('player', {
-            height: '0',
-            width: '0',
-            videoId: YOUTUBE_VIDEO_ID,
+            height: '0', width: '0', videoId: YOUTUBE_VIDEO_ID,
             playerVars: { 'autoplay': 0, 'controls': 0, 'loop': 1, 'playlist': YOUTUBE_VIDEO_ID },
-            events: {
-                'onReady': onPlayerReady
+        });
+    }
+    if(musicToggle) {
+        musicToggle.addEventListener('click', () => {
+            if (!player || typeof player.getPlayerState !== 'function') return;
+            const playerState = player.getPlayerState();
+            if (playerState === 1) { // Playing
+                player.pauseVideo();
+                musicToggle.textContent = '🎵';
+            } else { // Paused, cued, etc.
+                player.playVideo();
+                musicToggle.textContent = '🎶';
             }
         });
     }
 
-    function onPlayerReady(event) {
-        // Player is ready
-    }
-
-    musicToggle.addEventListener('click', () => {
-        if (!isPlayerReady || !player) return;
-        const playerState = player.getPlayerState();
-        if (playerState === YT.PlayerState.PLAYING || playerState === YT.PlayerState.BUFFERING) {
-            player.pauseVideo();
-            musicToggle.textContent = '🎵'; // Music Off Icon
-        } else {
-            player.playVideo();
-            musicToggle.textContent = '🎶'; // Music On Icon
-        }
-    });
-
     // --- Theme Toggle ---
-    themeToggle.addEventListener('click', () => {
-        const currentTheme = document.documentElement.getAttribute('data-theme');
-        if (currentTheme === 'dark') {
-            document.documentElement.removeAttribute('data-theme');
-            themeToggle.textContent = '🌙';
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            themeToggle.textContent = '☀️';
-        }
-    });
+    if(themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            if (currentTheme === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+                themeToggle.textContent = '🌙';
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeToggle.textContent = '☀️';
+            }
+        });
+    }
 
     // --- Navigation ---
     function showSection(id) {
         sections.forEach(section => {
-            section.classList.remove('active');
-            if (section.id === id) {
-                section.classList.add('active');
-            }
+            section.classList.toggle('active', section.id === id);
         });
     }
-
     links.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            const sectionId = link.getAttribute('href').substring(1);
-            window.location.hash = sectionId;
+            window.location.hash = link.getAttribute('href').substring(1);
         });
     });
 
-    let calendar;
+    // --- App Initialization based on Hash ---
+    function handleHashChange() {
+        const hash = window.location.hash.substring(1) || 'home';
+        showSection(hash);
+        links.forEach(l => {
+            l.classList.toggle('active', l.getAttribute('href').substring(1) === hash);
+        });
+        switch(hash) {
+            case 'calendar': initializeCalendar(); break;
+            case 'gallery': loadAndDisplayImages(); break;
+            case 'info': loadAndDisplayLinks(); break;
+            case 'recommendation': 
+                updateRecommendationForm();
+                loadAndDisplayRecommendations();
+                break;
+        }
+    }
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange(); // Initial load
 
+    // --- Calendar ---
+    let calendar;
     function initializeCalendar() {
         const calendarEl = document.getElementById('calendar-container');
-        if (!calendarEl || calendar) return;
-        if (GOOGLE_CALENDAR_API_KEY === 'YOUR_API_KEY' || GOOGLE_CALENDAR_ID === 'YOUR_CALENDAR_ID') {
-            calendarEl.innerHTML = '<p>Please configure Google Calendar API Key and Calendar ID.</p>';
-            return;
-        }
+        if (!calendarEl || calendar || !window.FullCalendar) return;
         calendar = new window.FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
             headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
@@ -151,233 +141,221 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Useful Links (Info Section) Logic ---
     const linksCollection = db.collection('useful_links');
-
-    // 1. Add new link
-    addLinkForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const title = linkTitle.value.trim();
-        const url = linkUrl.value.trim();
-        const category = linkCategory.value;
-
-        if (title === '' || url === '') {
-            alert('Please fill in both Title and URL.');
-            return;
-        }
-
-        try {
-            await linksCollection.add({
-                title,
-                url,
-                category,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            addLinkForm.reset();
-            loadAndDisplayLinks(); // Refresh the list
-        } catch (error) {
-            console.error("Error adding link: ", error);
-            alert('Failed to add link.');
-        }
-    });
-
-    // 2. Load and display all links
-    async function loadAndDisplayLinks() {
-        // Clear existing lists
-        Object.values(linkLists).forEach(list => { list.innerHTML = ''; });
-
-        try {
-            const snapshot = await linksCollection.orderBy('createdAt').get();
-            snapshot.forEach(doc => {
-                displayLink(doc.id, doc.data());
-            });
-        } catch (error) {
-            console.error("Error loading links: ", error);
-        }
-    }
-
-    // 3. Display a single link
-    function displayLink(id, data) {
-        const list = linkLists[data.category];
-        if (!list) return; // Category list not found
-
-        const li = document.createElement('li');
-        li.setAttribute('data-id', id);
-
-        const a = document.createElement('a');
-        a.href = data.url;
-        a.textContent = data.title;
-        a.target = '_blank';
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = '🗑️';
-        deleteBtn.className = 'delete-link-button';
-        deleteBtn.addEventListener('click', async () => {
-            if (confirm(`Are you sure you want to delete "${data.title}"?`)) {
-                try {
-                    await linksCollection.doc(id).delete();
-                    loadAndDisplayLinks(); // Refresh
-                } catch (error) {
-                    console.error("Error deleting link: ", error);
-                    alert("Failed to delete link.");
-                }
+    if(addLinkForm) {
+        addLinkForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!linkTitle.value || !linkUrl.value) return alert('Please fill in all fields.');
+            try {
+                await linksCollection.add({
+                    title: linkTitle.value, url: linkUrl.value, category: linkCategory.value,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                addLinkForm.reset();
+                loadAndDisplayLinks();
+            } catch (error) {
+                console.error("Error adding link: ", error);
+                alert('Failed to add link.');
             }
         });
-
-        li.appendChild(a);
-        li.appendChild(deleteBtn);
+    }
+    async function loadAndDisplayLinks() {
+        Object.values(linkLists).forEach(list => { if(list) list.innerHTML = ''; });
+        const snapshot = await linksCollection.orderBy('createdAt').get();
+        snapshot.forEach(doc => displayLink(doc.id, doc.data()));
+    }
+    function displayLink(id, data) {
+        const list = linkLists[data.category];
+        if (!list) return;
+        const li = document.createElement('li');
+        li.innerHTML = `<a href="${data.url}" target="_blank">${data.title}</a><button>🗑️</button>`;
+        li.querySelector('button').addEventListener('click', async () => {
+            if (confirm(`Delete "${data.title}"?`)) {
+                await linksCollection.doc(id).delete();
+                loadAndDisplayLinks();
+            }
+        });
         list.appendChild(li);
     }
 
-    // --- Recommendations Logic ---
+    // --- Recommendations Logic (CLEANED) ---
     const recommendationsCollection = db.collection('recommendations');
+    const recommendationForm = document.getElementById('add-recommendation-form');
+    const recommendationCategory = document.getElementById('recommendation-category');
+    const recommendationTitle = document.getElementById('recommendation-title');
+    const recommendationField1Group = document.getElementById('recommendation-field1-group');
+    const recommendationField1Label = recommendationField1Group.querySelector('label');
+    const recommendationField1 = document.getElementById('recommendation-field1');
+    const recommendationField2Group = document.getElementById('recommendation-field2-group');
+    const recommendationField2Label = recommendationField2Group.querySelector('label');
+    const recommendationField2 = document.getElementById('recommendation-field2');
+    const recommendationLists = {
+        book: document.getElementById('book-list'),
+        movie: document.getElementById('movie-list'),
+        music: document.getElementById('music-list'),
+    };
+    const recommendationModal = document.getElementById('recommendation-modal');
+    const recommendationModalTitle = document.getElementById('recommendation-modal-title');
+    const recommendationModalDetails = document.getElementById('recommendation-modal-details');
+    const recommendationModalCloseButton = document.querySelector('#recommendation-modal .close-button');
 
-    function updateRecommendationForm() {
-        const category = recommendationCategory.value;
-        recommendationField1Label.textContent = 'Details:';
-        recommendationField1.placeholder = `Enter details for the ${category}`;
-        recommendationField2Group.style.display = 'none';
+    if(recommendationModalCloseButton) {
+        recommendationModalCloseButton.onclick = function() {
+            if(recommendationModal) recommendationModal.style.display = "none";
+        }
     }
 
-    recommendationCategory.addEventListener('change', updateRecommendationForm);
-
-    recommendationForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    function updateRecommendationForm() {
+        if (!recommendationCategory) return;
         const category = recommendationCategory.value;
-        const title = recommendationTitle.value.trim();
-        const details = recommendationField1.value.trim();
+        const isBook = category === 'book';
 
-        if (title === '' || details === '') {
-            alert('Please fill in both Title and Details.');
-            return;
+        if(recommendationField1Group) {
+            recommendationField1Group.style.display = 'block';
+            recommendationField1Label.textContent = isBook ? 'Author:' : (category === 'movie' ? 'Summary:' : 'Singer:');
+            recommendationField1.placeholder = isBook ? 'e.g., J.K. Rowling' : (category === 'movie' ? 'Movie summary...' : 'e.g., Adele');
         }
-
-        let data = {
-            category,
-            title,
-            details,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        try {
-            await recommendationsCollection.add(data);
-            recommendationForm.reset();
-            loadAndDisplayRecommendations();
-        } catch (error) {
-            console.error("Error adding recommendation: ", error);
-            alert('Failed to add recommendation.');
+        if(recommendationField2Group){
+            recommendationField2Group.style.display = isBook ? 'block' : 'none';
+            if(isBook) {
+                recommendationField2Label.textContent = 'Comment:';
+                recommendationField2.placeholder = 'e.g., A fantastic read!';
+            }
         }
-    });
+    }
+
+    if(recommendationCategory) {
+        recommendationCategory.addEventListener('change', updateRecommendationForm);
+    }
+
+    if(recommendationForm) {
+        recommendationForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const category = recommendationCategory.value;
+            const title = recommendationTitle.value.trim();
+
+            if (title === '') return alert('Please enter a title.');
+
+            const data = {
+                category,
+                title,
+                field1: recommendationField1.value.trim(),
+                field2: recommendationField2.value.trim(),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                await recommendationsCollection.add(data);
+                recommendationForm.reset();
+                updateRecommendationForm();
+                loadAndDisplayRecommendations();
+            } catch (error) {
+                console.error("Error adding recommendation: ", error);
+                alert('Failed to add recommendation.');
+            }
+        });
+    }
 
     async function loadAndDisplayRecommendations() {
-        Object.values(recommendationLists).forEach(list => { list.innerHTML = ''; });
-
+        for (const list of Object.values(recommendationLists)) {
+            if (list) list.innerHTML = '';
+        }
         try {
             const snapshot = await recommendationsCollection.orderBy('createdAt', 'desc').get();
             snapshot.forEach(doc => {
-                const list = recommendationLists[doc.data().category];
-                if (!list) return;
-
-                const item = document.createElement('div');
-                item.className = 'recommendation-item';
-                
-                const title = document.createElement('h4');
-                title.textContent = doc.data().title;
-
-                const date = document.createElement('p');
-                date.className = 'recommendation-date';
-                const createdAt = doc.data().createdAt.toDate();
-                date.textContent = createdAt.toLocaleDateString();
-
-                item.appendChild(title);
-                item.appendChild(date);
-
-                item.addEventListener('click', () => showRecommendationDetails(doc.data()));
-                list.appendChild(item);
+                displayRecommendation(doc.id, doc.data());
             });
         } catch (error) {
             console.error("Error loading recommendations: ", error);
         }
     }
 
-    function showRecommendationDetails(data) {
-        recommendationModalTitle.textContent = data.title;
-        recommendationModalDetails.textContent = data.details;
-        recommendationModal.style.display = 'block';
+    function displayRecommendation(id, data) {
+        const list = recommendationLists[data.category];
+        if (!list) return;
+
+        const item = document.createElement('div');
+        item.className = 'recommendation-item';
+        
+        let detailsHtml = '';
+        if (data.category === 'book') {
+            detailsHtml = `<p><strong>Author:</strong> ${data.field1}</p><p><strong>Comment:</strong> ${data.field2}</p>`;
+        } else if (data.category === 'movie') {
+            detailsHtml = `<p><strong>Summary:</strong> ${data.field1}</p>`;
+        } else if (data.category === 'music') {
+            detailsHtml = `<p><strong>Singer:</strong> ${data.field1}</p>`;
+        }
+
+        item.innerHTML = `<h4>${data.title}</h4>`;
+        
+        const date = document.createElement('p');
+        date.className = 'recommendation-date';
+        if (data.createdAt && data.createdAt.toDate) {
+           date.textContent = data.createdAt.toDate().toLocaleDateString();
+        }
+        item.appendChild(date);
+        
+        item.addEventListener('click', () => {
+             if(recommendationModal) {
+                recommendationModalTitle.textContent = data.title;
+                recommendationModalDetails.innerHTML = detailsHtml;
+                recommendationModal.style.display = 'block';
+             }
+        });
+        list.appendChild(item);
     }
     
     // --- Photo Gallery Logic (Cloudinary + Firestore) ---
     async function loadAndDisplayImages() {
+        if(!galleryContainer) return;
         galleryContainer.innerHTML = '';
         try {
             const snapshot = await db.collection('images').orderBy('createdAt', 'desc').get();
-            snapshot.forEach(doc => displayImage(doc.data().url));
+            snapshot.forEach(doc => displayImage(doc.id, doc.data().url));
         } catch (error) {
             console.error("Error getting images: ", error);
         }
     }
-
-    function displayImage(url) {
+    function displayImage(id, url) {
         const item = document.createElement('div');
         item.className = 'gallery-item';
-        const img = document.createElement('img');
-        img.src = url;
-        item.appendChild(img);
-        galleryContainer.appendChild(item);
-
-        item.addEventListener('click', function() {
-            modal.style.display = "block";
-            modalImg.src = this.getElementsByTagName('img')[0].src;
-        });
-    }
-
-    uploadButton.addEventListener('click', () => {
-        const file = fileInput.files[0];
-        if (!file) { alert("Please select a file!"); return; }
-
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', CLOUDINARY_URL, true);
-        xhr.upload.onprogress = e => {
-            if (e.lengthComputable) {
-                const progress = (e.loaded / e.total) * 100;
-                uploadProgress.style.display = 'block';
-                uploadProgress.value = progress;
+        item.innerHTML = `<img src="${url}" alt="Gallery image">`;
+        item.addEventListener('click', () => {
+            if(modal) {
+                modal.style.display = "block";
+                modalImg.src = url;
             }
-        };
-        xhr.onload = () => {
-            uploadProgress.style.display = 'none';
-            if (xhr.status === 200) {
-                const res = JSON.parse(xhr.responseText);
-                db.collection('images').add({ url: res.secure_url, createdAt: firebase.firestore.FieldValue.serverTimestamp() })
-                    .then(() => { fileInput.value = ''; loadAndDisplayImages(); });
-            } else { alert('Upload failed.'); }
-        };
-        xhr.onerror = () => { alert('Upload error.'); };
-        xhr.send(formData);
-    });
-
-    // --- Hash-based Routing ---
-    function handleHashChange() {
-        const hash = window.location.hash.substring(1) || 'home';
-        showSection(hash);
-        links.forEach(l => {
-            l.classList.remove('active');
-            if (l.getAttribute('href').substring(1) === hash) l.classList.add('active');
         });
-
-        if (hash === 'calendar') setTimeout(initializeCalendar, 0);
-        if (hash === 'gallery') loadAndDisplayImages();
-        if (hash === 'info') loadAndDisplayLinks();
-        if (hash === 'recommendation') {
-            updateRecommendationForm();
-            loadAndDisplayRecommendations();
-        }
+        galleryContainer.appendChild(item);
     }
+    if(uploadButton) {
+        uploadButton.addEventListener('click', () => {
+            const file = fileInput.files[0];
+            if (!file) { alert("Please select a file!"); return; }
 
-    window.addEventListener('hashchange', handleHashChange);
-    handleHashChange(); // Initial load
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', CLOUDINARY_URL, true);
+            xhr.upload.onprogress = e => {
+                if (e.lengthComputable && uploadProgress) {
+                    uploadProgress.style.display = 'block';
+                    uploadProgress.value = (e.loaded / e.total) * 100;
+                }
+            };
+            xhr.onload = () => {
+                if(uploadProgress) uploadProgress.style.display = 'none';
+                if (xhr.status === 200) {
+                    const res = JSON.parse(xhr.responseText);
+                    db.collection('images').add({ url: res.secure_url, createdAt: firebase.firestore.FieldValue.serverTimestamp() })
+                        .then(() => { if(fileInput) fileInput.value = ''; loadAndDisplayImages(); });
+                } else { alert('Upload failed.'); }
+            };
+            xhr.onerror = () => { alert('Upload error.'); };
+            xhr.send(formData);
+        });
+    }
 
     // --- Lottery Generator ---
     lottoButtons.forEach(button => {
@@ -391,25 +369,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function generateLottoNumbers(type) {
         let balls = [];
         let specialCount = 0;
-
         switch (type) {
             case 'korea-645': balls = [{ count: 6, max: 45 }]; break;
             case 'korea-720':
                 const group = Math.floor(Math.random() * 5) + 1;
-                let rest = generateUniqueNumbers(6, 0, 9).join('');
+                let rest = Array.from({length: 6}, () => Math.floor(Math.random() * 10)).join('');
                 return { structured: `<strong>${group}조</strong> ${rest}` };
-            case 'usa-powerball':
-                balls = [{ count: 5, max: 69 }];
-                specialCount = 1;
-                break;
-            case 'usa-megamillions':
-                balls = [{ count: 5, max: 70 }];
-                specialCount = 1;
-                break;
+            case 'usa-powerball': balls = [{ count: 5, max: 69 }]; specialCount = 1; break;
+            case 'usa-megamillions': balls = [{ count: 5, max: 70 }]; specialCount = 1; break;
             case 'canada-649': balls = [{ count: 6, max: 49 }]; break;
             case 'canada-lottomax': balls = [{ count: 7, max: 50 }]; break;
         }
-
         let finalNumbers = balls.map(b => generateUniqueNumbers(b.count, 1, b.max)).flat();
         if (specialCount > 0) {
             const specialMax = (type === 'usa-powerball') ? 26 : 25;
@@ -428,58 +398,54 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayLottoNumbers(result, type) {
+        if(!lottoDisplay) return;
         lottoDisplay.innerHTML = '';
         if (result.structured) {
             lottoDisplay.innerHTML = result.structured;
         } else if (result.numbers) {
             const container = document.createElement('div');
             container.className = 'lotto-numbers-container';
-
             result.numbers.forEach(numObj => {
                 const ball = document.createElement('div');
                 let num, isSpecial;
-
                 if (typeof numObj === 'object' && numObj !== null) {
-                    num = numObj.val;
-                    isSpecial = numObj.special;
+                    num = numObj.val; isSpecial = numObj.special;
                 } else {
-                    num = numObj;
-                    isSpecial = false;
+                    num = numObj; isSpecial = false;
                 }
-
                 ball.textContent = num;
                 ball.className = 'lotto-number';
-                if (isSpecial) {
-                    ball.classList.add('lotto-special-number');
-                }
-
-                // Assign color based on lotto type
-                let color;
-                switch (type) {
-                    case 'korea-645': color = getLotto645Color(num); break;
-                    case 'usa-powerball': color = isSpecial ? '#e62e2e' : '#fff'; break;
-                    case 'usa-megamillions': color = isSpecial ? '#fbc400' : '#0033a0'; break;
-                    case 'canada-649': color = '#ce1126'; break;
-                    case 'canada-lottomax': color = '#009cde'; break;
-                    default: color = '#ddd';
-                }
-                ball.style.backgroundColor = color;
-                if(type === 'usa-powerball' && !isSpecial) ball.style.color = '#000'; // White ball, black text
-                else ball.style.color = '#fff'; // Default to white text
+                if (isSpecial) ball.classList.add('lotto-special-number');
                 
-
+                ball.style.backgroundColor = getLottoColor(type, num, isSpecial);
+                if((type === 'usa-powerball' && !isSpecial) || (type === 'korea-645' && (num > 10 && num <=20))) {
+                    ball.style.color = '#000';
+                } else {
+                    ball.style.color = '#fff';
+                }
                 container.appendChild(ball);
             });
             lottoDisplay.appendChild(container);
         }
     }
 
-    function getLotto645Color(number) {
-        if (number <= 10) return '#fbc400'; // 노란색
-        if (number <= 20) return '#69c8f2'; // 파란색
-        if (number <= 30) return '#ff7272'; // 빨간색
-        if (number <= 40) return '#aaa';    // 회색
-        return '#b0d840'; // 녹색
+    function getLottoColor(type, number, isSpecial) {
+        if (isSpecial) {
+            if(type === 'usa-powerball') return '#e62e2e';
+            if(type === 'usa-megamillions') return '#fbc400';
+        }
+        switch (type) {
+            case 'korea-645':
+                if (number <= 10) return '#fbc400';
+                if (number <= 20) return '#69c8f2';
+                if (number <= 30) return '#ff7272';
+                if (number <= 40) return '#aaa';
+                return '#b0d840';
+            case 'usa-powerball': return '#fff';
+            case 'usa-megamillions': return '#0033a0';
+            case 'canada-649': return '#ce1126';
+            case 'canada-lottomax': return '#009cde';
+            default: return '#ddd';
+        }
     }
-
 });
