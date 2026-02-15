@@ -323,13 +323,21 @@ section#home {
     gap: 15px;
 }
 .recommendation-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 15px;
     box-shadow: 0 2px 4px var(--shadow-color);
-    cursor: pointer;
     transition: transform 0.2s;
 }
+
+.recommendation-item-content {
+    flex-grow: 1;
+    cursor: pointer;
+}
+
 .recommendation-item:hover {
     transform: translateY(-2px);
 }
@@ -339,6 +347,20 @@ section#home {
 .recommendation-date {
     font-size: 0.8rem;
     color: var(--secondary-color);
+}
+
+.delete-recommendation-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--secondary-color);
+    padding: 5px;
+    transition: color 0.3s;
+}
+
+.delete-recommendation-btn:hover {
+    color: #e44d26;
 }
 
 

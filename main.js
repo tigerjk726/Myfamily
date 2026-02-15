@@ -211,11 +211,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!list) return;
             const item = document.createElement('div');
             item.className = 'recommendation-item';
-            item.innerHTML = `<h4>${data.title}</h4>`;
-            if (data.createdAt?.toDate) {
-                item.innerHTML += `<p class="recommendation-date">${data.createdAt.toDate().toLocaleDateString()}</p>`;
-            }
-            item.addEventListener('click', () => {
+            item.innerHTML = `
+                <div class="recommendation-item-content">
+                    <h4>${data.title}</h4>
+                    ${data.createdAt?.toDate ? `<p class="recommendation-date">${data.createdAt.toDate().toLocaleDateString()}</p>` : ''}
+                </div>
+                <button class="delete-recommendation-btn">🗑️</button>
+            `;
+
+            item.querySelector('.recommendation-item-content').addEventListener('click', () => {
                 let detailsHtml = '';
                 if (data.category === 'book') {
                     detailsHtml = `<p><strong>Author:</strong> ${data.field1}</p><p><strong>Comment:</strong> ${data.field2}</p>`;
@@ -228,9 +232,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 recommendationModalDetails.innerHTML = detailsHtml;
                 recommendationModal.style.display = 'block';
             });
+
+            item.querySelector('.delete-recommendation-btn').addEventListener('click', async (e) => {
+                e.stopPropagation(); // Stop the click from opening the modal
+                if (confirm(`Are you sure you want to delete "${data.title}"?`)) {
+                    try {
+                        await recommendationsCollection.doc(doc.id).delete();
+                        loadAndDisplayRecommendations(); // Refresh the list
+                    } catch (error) {
+                        console.error("Error deleting recommendation: ", error);
+                        alert("Failed to delete recommendation.");
+                    }
+                }
+            });
+
             list.appendChild(item);
         });
     }
+
 
     // --- Photo Gallery Logic ---
     uploadButton?.addEventListener('click', () => {
