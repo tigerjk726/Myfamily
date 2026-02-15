@@ -278,7 +278,7 @@ section#home {
 }
 
 
-#add-link-form-container, footer #contact {
+#add-link-form-container, footer #contact, #add-recommendation-form-container {
     max-width: 600px;
     margin: 40px auto; 
 }
@@ -305,21 +305,22 @@ section#home {
 /* Recommendations Section */
 .recommendations-container {
     display: flex;
+    flex-direction: row; /* Arrange categories horizontally */
     gap: 20px;
     margin-top: 20px;
-    flex-wrap: wrap;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
 }
 .recommendation-category-container {
-    flex: 1;
+    flex: 1; /* Allow categories to grow and share space */
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 15px;
     box-shadow: 0 2px 4px var(--shadow-color);
-    min-width: 300px;
+    min-width: 300px; /* Minimum width before wrapping */
 }
 .recommendation-list {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; /* Arrange items in a single column vertically */
     gap: 15px;
 }
 .recommendation-item {
@@ -454,8 +455,8 @@ footer {
     main { padding: 10px; margin: 10px auto; }
     section { padding: 15px; }
     h2 { font-size: 2rem; }
-    #lotto-controls, #add-link-form { flex-direction: column; align-items: stretch; }
-    .lotto-group { min-width: unset; width: 100%; box-sizing: border-box; }
+    #lotto-controls, #add-link-form, .recommendations-container { flex-direction: column; align-items: stretch; }
+    .lotto-group, .recommendation-category-container { min-width: unset; width: 100%; box-sizing: border-box; }
     .lotto-number { width: 40px; height: 40px; font-size: 1.2rem; }
     #gallery-container { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
     .gallery-item img { height: 110px; }
