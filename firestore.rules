@@ -1,20 +1,8 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow anyone to read and write to the events collection
-    match /events/{eventId} {
-      allow read, write;
-    }
-    match /images/{imageId} {
-        allow read, create;
-    }
-    match /recommendations/{recommendationId} {
-      allow read, write;
-    }
-    // Allow public access to the useful_links collection
-    match /useful_links/{linkId} {
-        allow read, write;
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }
