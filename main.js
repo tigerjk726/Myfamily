@@ -52,6 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const addRecommendationForm = document.getElementById('add-recommendation-form');
     const recommendationCategoryInput = document.getElementById('recommendation-category');
     const recommendationTitleInput = document.getElementById('recommendation-title');
+    const recommendationDateInput = document.getElementById('recommendation-date');
+    const recommendationNameInput = document.getElementById('recommendation-name');
     const recommendationField1Group = document.getElementById('recommendation-field1-group');
     const recommendationField1Label = document.getElementById('recommendation-field1-label');
     const recommendationField1Input = document.getElementById('recommendation-field1');
@@ -174,26 +176,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateRecommendationFormUI = () => {
         if (!recommendationCategoryInput) return;
         const category = recommendationCategoryInput.value;
-        const isBook = category === 'book';
-        if(recommendationField1Label) recommendationField1Label.textContent = isBook ? 'Author:' : (category === 'movie' ? 'Summary:' : 'Singer:');
-        if(recommendationField1Input) recommendationField1Input.placeholder = isBook ? 'e.g., J.K. Rowling' : '...';
-        if(recommendationField2Group) recommendationField2Group.style.display = isBook ? 'block' : 'none';
+        const movieFields = document.querySelectorAll('.movie-field');
+        const bookMusicFields = document.querySelectorAll('.book-music-field');
+
+        if (category === 'movie') {
+            movieFields.forEach(field => field.style.display = 'block');
+            bookMusicFields.forEach(field => field.style.display = 'none');
+        } else {
+            movieFields.forEach(field => field.style.display = 'none');
+            bookMusicFields.forEach(field => field.style.display = 'block');
+            const isBook = category === 'book';
+            if(recommendationField1Label) recommendationField1Label.textContent = isBook ? 'Author:' : 'Singer:';
+            if(recommendationField1Input) recommendationField1Input.placeholder = isBook ? 'e.g., J.K. Rowling' : '...';
+            if(recommendationField2Group) recommendationField2Group.style.display = isBook ? 'block' : 'none';
+        }
     };
     recommendationCategoryInput?.addEventListener('change', updateRecommendationFormUI);
     updateRecommendationFormUI(); // Initial UI setup
 
     addRecommendationForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const category = recommendationCategoryInput.value;
         const title = recommendationTitleInput.value.trim();
         if (!title) return alert('Please enter a title.');
+        
+        let data = { 
+            category,
+            title,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        if (category === 'movie') {
+            const date = recommendationDateInput.value;
+            const name = recommendationNameInput.value;
+            if (!date) return alert('Please select a date.');
+            data.date = date;
+            data.name = name;
+        } else {
+            data.field1 = recommendationField1Input.value.trim();
+            if (category === 'book') {
+                data.field2 = recommendationField2Input.value.trim();
+            }
+        }
+
         try {
-            await recommendationsCollection.add({
-                category: recommendationCategoryInput.value,
-                title: title,
-                field1: recommendationField1Input.value.trim(),
-                field2: recommendationField2Input.value.trim(),
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            await recommendationsCollection.add(data);
             addRecommendationForm.reset();
             updateRecommendationFormUI();
             loadAndDisplayRecommendations();
@@ -211,9 +238,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!list) return;
             const item = document.createElement('div');
             item.className = 'recommendation-item';
+            
+            let contentHtml = '';
+            if (data.category === 'movie') {
+                contentHtml = `<h4>${data.date} - ${data.name}: ${data.title}</h4>`;
+            } else {
+                contentHtml = `<h4>${data.title}</h4>`;
+            }
+
             item.innerHTML = `
                 <div class="recommendation-item-content">
-                    <h4>${data.title}</h4>
+                    ${contentHtml}
                     ${data.createdAt?.toDate ? `<p class="recommendation-date">${data.createdAt.toDate().toLocaleDateString()}</p>` : ''}
                 </div>
                 <button class="delete-recommendation-btn">🗑️</button>
@@ -224,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.category === 'book') {
                     detailsHtml = `<p><strong>Author:</strong> ${data.field1}</p><p><strong>Comment:</strong> ${data.field2}</p>`;
                 } else if (data.category === 'movie') {
-                    detailsHtml = `<p><strong>Summary:</strong> ${data.field1}</p>`;
+                    detailsHtml = `<p><strong>Date:</strong> ${data.date}</p><p><strong>Name:</strong> ${data.name}</p><p><strong>Title:</strong> ${data.title}</p>`;
                 } else if (data.category === 'music') {
                     detailsHtml = `<p><strong>Singer:</strong> ${data.field1}</p>`;
                 }

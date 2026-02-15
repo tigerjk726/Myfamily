@@ -303,6 +303,10 @@ section#home {
 }
 
 /* Recommendations Section */
+.movie-field, .book-music-field {
+    display: none; /* Initially hide all specific fields */
+}
+
 .recommendations-container {
     display: flex;
     flex-direction: row; /* Arrange categories horizontally */
