@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const GOOGLE_CALENDAR_ID = 'tigerjk726@gmail.com';
 
     // --- YouTube Music Config ---
-    const YOUTUBE_VIDEO_ID = 'C02fHh1AnKs';
+    const YOUTUBE_VIDEO_ID = 'eLhSxOAaWmg';
 
     // --- DOM Element References ---
     const themeToggle = document.getElementById('theme-toggle');
