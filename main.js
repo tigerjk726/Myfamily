@@ -57,11 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const recommendationField1Input = document.getElementById('recommendation-field1');
     const recommendationField2Group = document.getElementById('recommendation-field2-group');
     const recommendationField2Input = document.getElementById('recommendation-field2');
-    const recommendationLists = {
-        book: document.getElementById('book-list'),
-        movie: document.getElementById('movie-list'),
-        music: document.getElementById('music-list'),
-    };
 
     // Modals
     const imageModal = document.getElementById('image-modal');
@@ -112,7 +107,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (hash === 'calendar') initializeCalendar();
         if (hash === 'gallery') loadAndDisplayImages();
         if (hash === 'info') loadAndDisplayLinks();
-        if (hash === 'recommendation') loadAndDisplayRecommendations();
+        if (hash === 'recommendation') {
+            loadAndDisplayRecommendations('book');
+            loadAndDisplayRecommendations('music');
+            loadAndDisplayRecommendations('movie');
+        }
     };
     navLinks.forEach(link => link.addEventListener('click', (e) => {
         e.preventDefault();
@@ -171,6 +170,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Recommendations Logic ---
+    const recommendationStates = {
+        book: { lastVisible: null, firstVisible: null, page: 1 },
+        music: { lastVisible: null, firstVisible: null, page: 1 },
+        movie: { lastVisible: null, firstVisible: null, page: 1 },
+    };
+    const ITEMS_PER_PAGE = 10;
+
     const updateRecommendationFormUI = () => {
         if (!recommendationCategoryInput) return;
         const category = recommendationCategoryInput.value;
@@ -180,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(recommendationField2Group) recommendationField2Group.style.display = isBook ? 'block' : 'none';
     };
     recommendationCategoryInput?.addEventListener('change', updateRecommendationFormUI);
-    updateRecommendationFormUI(); // Initial UI setup
+    updateRecommendationFormUI();
 
     addRecommendationForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -196,40 +202,117 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             addRecommendationForm.reset();
             updateRecommendationFormUI();
-            loadAndDisplayRecommendations();
+            loadAndDisplayRecommendations(recommendationCategoryInput.value);
         } catch (error) {
             console.error("Error adding recommendation: ", error);
         }
     });
 
-    async function loadAndDisplayRecommendations() {
-        Object.values(recommendationLists).forEach(list => { if (list) list.innerHTML = ''; });
-        const snapshot = await recommendationsCollection.orderBy('createdAt', 'desc').get();
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const list = recommendationLists[data.category];
-            if (!list) return;
-            const item = document.createElement('div');
-            item.className = 'recommendation-item';
-            item.innerHTML = `<h4>${data.title}</h4>`;
-            if (data.createdAt?.toDate) {
-                item.innerHTML += `<p class="recommendation-date">${data.createdAt.toDate().toLocaleDateString()}</p>`;
+    async function loadAndDisplayRecommendations(category, direction = 'initial') {
+        const listEl = document.getElementById(`${category}-list`);
+        const paginationEl = document.getElementById(`${category}-pagination`);
+        if (!listEl || !paginationEl) return;
+
+        listEl.innerHTML = '';
+        paginationEl.innerHTML = '';
+
+        let query = recommendationsCollection
+            .where('category', '==', category)
+            .orderBy('createdAt', 'desc');
+
+        const state = recommendationStates[category];
+
+        if (direction === 'next' && state.lastVisible) {
+            query = query.startAfter(state.lastVisible);
+        } else if (direction === 'prev' && state.firstVisible) {
+            query = query.endBefore(state.firstVisible).limitToLast(ITEMS_PER_PAGE);
+        } else {
+            query = query.limit(ITEMS_PER_PAGE);
+        }
+
+        try {
+            const snapshot = await query.get();
+            if (snapshot.empty && direction !== 'initial') {
+                 // If we navigated and got an empty set, revert the page number
+                if (direction === 'next') state.page--;
+                if (direction === 'prev') state.page++;
+                return; // Stay on the current page
             }
-            item.addEventListener('click', () => {
-                let detailsHtml = '';
-                if (data.category === 'book') {
-                    detailsHtml = `<p><strong>Author:</strong> ${data.field1}</p><p><strong>Comment:</strong> ${data.field2}</p>`;
-                } else if (data.category === 'movie') {
-                    detailsHtml = `<p><strong>Summary:</strong> ${data.field1}</p>`;
-                } else if (data.category === 'music') {
-                    detailsHtml = `<p><strong>Singer:</strong> ${data.field1}</p>`;
-                }
-                recommendationModalTitle.textContent = data.title;
-                recommendationModalDetails.innerHTML = detailsHtml;
-                recommendationModal.style.display = 'block';
+            if(direction === 'initial') {
+                state.page = 1;
+            }
+            
+            state.lastVisible = snapshot.docs[snapshot.docs.length - 1];
+            state.firstVisible = snapshot.docs[0];
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const item = document.createElement('div');
+                item.className = 'recommendation-item';
+                item.innerHTML = `
+                    <div class="recommendation-item-content">
+                        <h4>${data.title}</h4>
+                        ${data.createdAt?.toDate ? `<p class="recommendation-date">${data.createdAt.toDate().toLocaleDateString()}</p>` : ''}
+                    </div>
+                    <button class="delete-recommendation-btn">🗑️</button>
+                `;
+
+                item.querySelector('.recommendation-item-content').addEventListener('click', () => {
+                    let detailsHtml = '';
+                    if (data.category === 'book') {
+                        detailsHtml = `<p><strong>Author:</strong> ${data.field1}</p><p><strong>Comment:</strong> ${data.field2}</p>`;
+                    } else if (data.category === 'movie') {
+                        detailsHtml = `<p><strong>Summary:</strong> ${data.field1}</p>`;
+                    } else if (data.category === 'music') {
+                        detailsHtml = `<p><strong>Singer:</strong> ${data.field1}</p>`;
+                    }
+                    recommendationModalTitle.textContent = data.title;
+                    recommendationModalDetails.innerHTML = detailsHtml;
+                    recommendationModal.style.display = 'block';
+                });
+
+                item.querySelector('.delete-recommendation-btn').addEventListener('click', async (e) => {
+                    e.stopPropagation(); 
+                    if (confirm(`Are you sure you want to delete "${data.title}"?`)) {
+                        await recommendationsCollection.doc(doc.id).delete();
+                        loadAndDisplayRecommendations(category);
+                    }
+                });
+
+                listEl.appendChild(item);
             });
-            list.appendChild(item);
-        });
+
+            setupPagination(category, snapshot.docs.length);
+
+        } catch (error) {
+            console.error("Error loading recommendations: ", error);
+        }
+    }
+
+    function setupPagination(category, count) {
+        const paginationEl = document.getElementById(`${category}-pagination`);
+        const state = recommendationStates[category];
+        paginationEl.innerHTML = '';
+
+        if (state.page > 1) {
+            const prevButton = document.createElement('button');
+            prevButton.textContent = 'Previous';
+            prevButton.onclick = () => {
+                state.page--;
+                loadAndDisplayRecommendations(category, 'prev');
+            };
+            paginationEl.appendChild(prevButton);
+        }
+
+        if (count === ITEMS_PER_PAGE) { // If there might be more pages
+            const nextButton = document.createElement('button');
+            nextButton.textContent = 'Next';
+            nextButton.onclick = () => {
+                state.page++;
+                loadAndDisplayRecommendations(category, 'next');
+            };
+            paginationEl.appendChild(nextButton);
+        }
     }
 
     // --- Photo Gallery Logic ---

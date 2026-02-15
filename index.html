@@ -129,9 +129,26 @@
                 </form>
             </div>
         </section>
-
+        
         <section id="recommendation">
             <h2>Recommendations</h2>
+            <div class="recommendations-container">
+                <div class="recommendation-category-container">
+                    <h3>Books</h3>
+                    <div id="book-list" class="recommendation-list"></div>
+                    <div id="book-pagination" class="pagination-controls"></div>
+                </div>
+                <div class="recommendation-category-container">
+                    <h3>Music</h3>
+                    <div id="music-list" class="recommendation-list"></div>
+                    <div id="music-pagination" class="pagination-controls"></div>
+                </div>
+                <div class="recommendation-category-container">
+                    <h3>Movies</h3>
+                    <div id="movie-list" class="recommendation-list"></div>
+                    <div id="movie-pagination" class="pagination-controls"></div>
+                </div>
+            </div>
             <div id="add-recommendation-form-container">
                 <h3>Add a New Recommendation</h3>
                 <form id="add-recommendation-form">
@@ -139,8 +156,8 @@
                         <label for="recommendation-category">Category:</label>
                         <select id="recommendation-category" required>
                             <option value="book">Book</option>
-                            <option value="movie">Movie</option>
                             <option value="music">Music</option>
+                            <option value="movie">Movie</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -157,20 +174,6 @@
                     </div>
                     <button type="submit" id="add-recommendation-button">Add Recommendation</button>
                 </form>
-            </div>
-            <div class="recommendations-container">
-                <div class="recommendation-category-container">
-                    <h3>Books</h3>
-                    <div id="book-list" class="recommendation-list"></div>
-                </div>
-                <div class="recommendation-category-container">
-                    <h3>Movies</h3>
-                    <div id="movie-list" class="recommendation-list"></div>
-                </div>
-                <div class="recommendation-category-container">
-                    <h3>Music</h3>
-                    <div id="music-list" class="recommendation-list"></div>
-                </div>
             </div>
         </section>
 
