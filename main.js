@@ -9,7 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
         messagingSenderId: "1043656805377",
         appId: "1:1043656805377:web:902d6f8dc9dcbb95be4400"
     };
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
     const db = firebase.firestore();
     const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dklpq8xg8/image/upload';
     const CLOUDINARY_UPLOAD_PRESET = 'family_hub_preset';
@@ -57,7 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const recommendationField1Group = document.getElementById('recommendation-field1-group');
     const recommendationField1Label = document.getElementById('recommendation-field1-label');
     const recommendationField1Input = document.getElementById('recommendation-field1');
-    const recommendationField2Group = document.getElementById('recommendation-field2-group
+    const recommendationField2Group = document.getElementById('recommendation-field2-group');
+    const recommendationField2Input = document.getElementById('recommendation-field2');
 
     // Modals
     const imageModal = document.getElementById('image-modal');
@@ -393,7 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const getLottoTextColor = (type, number, a, isSpecial) => {
+    const getLottoTextColor = (type, number, isSpecial) => {
         if (isSpecial) return '#fff';
         if (type === 'korea-645' && number > 10 && number <= 20) return '#000';
         if (type === 'usa-powerball') return '#000';
