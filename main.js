@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const CLOUDINARY_UPLOAD_PRESET = 'family_hub_preset';
     const GOOGLE_CALENDAR_API_KEY = 'AIzaSyBPTUgBQVsdQ8zsHCmE6CtjcL3LASoweLs';
     const GOOGLE_CALENDAR_ID = 'tigerjk726@gmail.com';
-    const YOUTUBE_VIDEO_ID = 'eLhSxOAaWmg';
+    const YOUTUBE_VIDEO_ID = 'jBmhsV9NKPg';
 
     // --- Collections ---
     const linksCollection = db.collection('useful_links');
