@@ -21,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const linksCollection = db.collection('useful_links');
     const recommendationsCollection = db.collection('recommendations');
     const imagesCollection = db.collection('images');
-    const gameScoresCollection = db.collection('game_scores');
 
     // --- General DOM Elements ---
     const themeToggle = document.getElementById('theme-toggle');
@@ -58,19 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const recommendationField1Group = document.getElementById('recommendation-field1-group');
     const recommendationField1Label = document.getElementById('recommendation-field1-label');
     const recommendationField1Input = document.getElementById('recommendation-field1');
-    const recommendationField2Group = document.getElementById('recommendation-field2-group');
-    const recommendationField2Input = document.getElementById('recommendation-field2');
-    const recommendationLists = {
-        book: document.getElementById('book-list'),
-        movie: document.getElementById('movie-list'),
-        music: document.getElementById('music-list'),
-    };
-
-    // Game Score Form
-    const addScoreForm = document.getElementById('add-score-form');
-    const playerNameInput = document.getElementById('player-name');
-    const playerScoreInput = document.getElementById('player-score');
-    const leaderboardList = document.getElementById('leaderboard-list');
+    const recommendationField2Group = document.getElementById('recommendation-field2-group
 
     // Modals
     const imageModal = document.getElementById('image-modal');
@@ -122,7 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (hash === 'gallery') loadAndDisplayImages();
         if (hash === 'info') loadAndDisplayLinks();
         if (hash === 'recommendation') loadAndDisplayRecommendations();
-        if (hash === 'game') loadAndDisplayGameScores('1942');
     };
     navLinks.forEach(link => link.addEventListener('click', (e) => {
         e.preventDefault();
@@ -293,51 +279,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Game Score Logic ---
-    addScoreForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const name = playerNameInput.value.trim();
-        const score = playerScoreInput.value.trim();
-        if (!name || !score) return alert('Please fill in all fields.');
-
-        try {
-            await gameScoresCollection.add({
-                game: '1942',
-                name: name,
-                score: parseInt(score, 10),
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            addScoreForm.reset();
-            loadAndDisplayGameScores('1942');
-        } catch (error) {
-            console.error("Error adding score: ", error);
-            alert('Failed to submit score.');
-        }
-    });
-
-    async function loadAndDisplayGameScores(gameId) {
-        if (!leaderboardList) return;
-        leaderboardList.innerHTML = ''; // Clear previous scores
-        const snapshot = await gameScoresCollection
-            .where('game', '==', gameId)
-            .orderBy('score', 'desc')
-            .limit(10)
-            .get();
-            
-        if (snapshot.empty) {
-            leaderboardList.innerHTML = '<li>No scores yet. Be the first!</li>';
-            return;
-        }
-
-        snapshot.forEach((doc, index) => {
-            const data = doc.data();
-            const li = document.createElement('li');
-            li.innerHTML = `<strong>#${index + 1}</strong> ${data.name} - <em>${data.score.toLocaleString()}</em>`;
-            leaderboardList.appendChild(li);
-        });
-    }
-
-
     // --- Photo Gallery Logic ---
     uploadButton?.addEventListener('click', () => {
         const file = fileInput.files[0];
@@ -400,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const rest = Array.from({length: 6}, () => Math.floor(Math.random() * 10)).join('');
                 return { structured: `<strong>${group}조</strong> ${rest}` };
             case 'usa-powerball': balls = [{ count: 5, max: 69 }]; specialCount = 1; specialMax = 26; break;
-            case 'usa-megamillions': balls = [{ count: 5, max: 70 }]; specialCount = 1; specialMax = 25; break;
+            case 'usa-megamillions': balls = [{ count: 5, max: 70 }]; specialCount = 1, specialMax = 25; break;
             case 'canada-649': balls = [{ count: 6, max: 49 }]; break;
             case 'canada-lottomax': balls = [{ count: 7, max: 50 }]; break;
         }
@@ -452,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const getLottoTextColor = (type, number, isSpecial) => {
+    const getLottoTextColor = (type, number, a, isSpecial) => {
         if (isSpecial) return '#fff';
         if (type === 'korea-645' && number > 10 && number <= 20) return '#000';
         if (type === 'usa-powerball') return '#000';

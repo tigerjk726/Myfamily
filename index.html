@@ -195,29 +195,20 @@
         </section>
 
         <section id="game">
-            <h2>Game Zone</h2>
-            <div id="game-container">
-                <h3>1942</h3>
-                <iframe src="https://www.retrogames.me/arcade/1942-revision-b.html?utm_source=chatgpt.com#google_vignette" width="800" height="600" frameborder="0"></iframe>
-                <div id="game-score-form-container">
-                    <h3>Record Your Score</h3>
-                    <form id="add-score-form">
-                        <div class="form-group">
-                            <label for="player-name">Name:</label>
-                            <input type="text" id="player-name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="player-score">Score:</label>
-                            <input type="number" id="player-score" required>
-                        </div>
-                        <button type="submit">Submit Score</button>
-                    </form>
-                </div>
-                <div id="leaderboard-container">
-                    <h3>Leaderboard - 1942</h3>
-                    <ol id="leaderboard-list"></ol>
-                </div>
+            <h2>1945 Family Game - Ultimate</h2>
+            <div id="ui">
+                Name: <input id="playerName" value="Player" style="width:80px"><br>
+                Score: <span id="score">0</span> Stage: <span id="stage">1</span>
             </div>
+            <div id="leaderboard">
+                Top Scores<br>
+                <div id="rankList"></div>
+            </div>
+            <div id="gameover">
+                <h1>GAME OVER</h1>
+                <button onclick="restart()">Restart</button>
+            </div>
+            <canvas id="game-canvas" width="400" height="600"></canvas>
         </section>
 
         <div id="recommendation-modal" class="modal">
@@ -270,18 +261,174 @@
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="main.js" type="module"></script>
     <script>
+    (function() {
+        const firebaseConfig = {
+            apiKey: "AIzaSyBPTUgBQVsdQ8zsHCmE6CtjcL3LASoweLs",
+            authDomain: "my-family-in-canada-8348-d04e1.firebaseapp.com",
+            projectId: "my-family-in-canada-8348-d04e1",
+            storageBucket: "my-family-in-canada-8348-d04e1.appspot.com",
+            messagingSenderId: "1043656805377",
+            appId: "1:1043656805377:web:902d6f8dc9dcbb95be4400"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const scoresCol = db.collection('scores');
+
+        const canvas = document.getElementById("game-canvas");
+        const ctx = canvas.getContext("2d");
+
+        let keys = {};
+        let bullets = [];
+        let enemies = [];
+        let enemyBullets = [];
+        let explosions = [];
+        let score = 0;
+        let stage = 1;
+        let running = true;
+        let boss = null;
+        let stars=[];
+
+        for(let i=0;i<50;i++){stars.push({x:Math.random()*400,y:Math.random()*600,r:Math.random()*2+1,speed:Math.random()*1+0.5});}
+
+        const shootAudio = new Audio("https://freesound.org/data/previews/341/341695_6242930-lq.mp3");
+        const explosionAudio = new Audio("https://freesound.org/data/previews/174/174055_3242494-lq.mp3");
+        const bgmAudio = new Audio("https://freesound.org/data/previews/522/522828_10011386-lq.mp3");
+        bgmAudio.loop = true;
+        bgmAudio.volume = 0.3;
+        bgmAudio.play().catch(()=>{}); 
+
+        function updateLeaderboard() {
+            scoresCol.orderBy('score','desc').limit(5).get().then(snapshot=>{
+                let html="";
+                snapshot.forEach((doc,i)=>{
+                    const d=doc.data();
+                    html+=`${i+1}. ${d.name} ${d.score}<br>`;
+                });
+                document.getElementById("rankList").innerHTML=html;
+            });
+        }
+        updateLeaderboard();
+
+        const player = {x:180,y:500,w:40,h:40,speed:5};
+
+        document.addEventListener("keydown",e=>keys[e.key]=true);
+        document.addEventListener("keyup",e=>keys[e.key]=false);
+        canvas.addEventListener("touchmove", e=>{
+            let rect = canvas.getBoundingClientRect();
+            let touch = e.touches[0];
+            player.x = touch.clientX - rect.left - player.w/2;
+            player.y = touch.clientY - rect.top - player.h/2;
+        });
+
+        setInterval(()=>{if(running){bullets.push({x:player.x+18,y:player.y,w:4,h:10});shootAudio.play();}},250);
+
+        function spawnEnemy(){
+            if(!running) return;
+            const typeRand=Math.random();
+            let type="small";
+            if(typeRand<0.6) type="small";
+            else if(typeRand<0.9) type="medium";
+            else type="large";
+            enemies.push({x:Math.random()*(400-40),y:-40,w:type=="small"?30:type=="medium"?50:60,h:type=="small"?30:type=="medium"?50:60,speed:2+Math.random()*stage,type, hp:type=="large"?5:1});
+            if(Math.random()<0.05 && !boss) spawnBoss();
+            setTimeout(spawnEnemy, 1000- stage*50);
+        }
+        function spawnBoss(){
+            boss = {x:160,y:-100,w:80,h:80,hp:10+stage*5,speed:1,dir:1};
+        }
+        spawnEnemy();
+
+        setInterval(()=>{
+            enemies.forEach(e=>{
+                if(Math.random()<0.02){ enemyBullets.push({x:e.x+e.w/2-2,y:e.y+e.h,w:4,h:10,speed:4}); }
+            });
+            if(boss) enemyBullets.push({x:boss.x+boss.w/2-2,y:boss.y+boss.h,w:6,h:12,speed:5});
+        },300);
+
+        function update(){
+            if(!running) return;
+
+            if(keys["ArrowLeft"]) player.x-=player.speed;
+            if(keys["ArrowRight"]) player.x+=player.speed;
+            if(keys["ArrowUp"]) player.y-=player.speed;
+            if(keys["ArrowDown"]) player.y+=player.speed;
+
+            bullets.forEach((b,i)=>{b.y-=7;if(b.y<0) bullets.splice(i,1);});
+
+            enemyBullets.forEach((b,i)=>{b.y+=b.speed;if(hit(player,b)) gameOver(); if(b.y>600) enemyBullets.splice(i,1);});
+
+            enemies.forEach((e,i)=>{
+                e.y+=e.speed;
+                if(hit(player,e)) gameOver();
+                if(e.y>600) enemies.splice(i,1);
+                bullets.forEach((b,bi)=>{
+                    if(hit(b,e)){
+                        explosions.push({x:e.x,y:e.y,size:10});bullets.splice(bi,1);
+                        e.hp--; if(e.hp<=0){enemies.splice(i,1);score+=e.type=="large"?200:e.type=="medium"?150:100; explosionAudio.play();}
+                    }
+                });
+            });
+
+            if(boss){
+                boss.y += boss.speed;
+                boss.x += boss.dir*2;
+                if(boss.x<0 || boss.x>320) boss.dir*=-1;
+                if(hit(player,boss)) gameOver();
+                bullets.forEach((b,bi)=>{
+                    if(hit(b,boss)){
+                        explosions.push({x:boss.x,y:boss.y,size:15}); bullets.splice(bi,1);
+                        boss.hp--; score+=50; explosionAudio.play();
+                        if(boss.hp<=0){boss=null;stage++;document.getElementById("stage").innerText=stage;} 
+                    }
+                });
+            }
+
+            explosions.forEach((ex,i)=>{ex.size+=2; if(ex.size>30) explosions.splice(i,1);});
+
+            document.getElementById("score").innerText=score;
+        }
+
+        function draw(){
+            ctx.clearRect(0,0,400,600);
+            ctx.fillStyle="white"; stars.forEach(s=>{ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();s.y+=s.speed;if(s.y>600)s.y=0;s.x=Math.random()*400;});
+            ctx.fillStyle="cyan"; ctx.beginPath();
+            ctx.moveTo(player.x+20,player.y); ctx.lineTo(player.x,player.y+40); ctx.lineTo(player.x+40,player.y+40); ctx.closePath(); ctx.fill();
+            ctx.fillStyle="yellow"; bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
+            ctx.fillStyle="orange"; enemyBullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
+            enemies.forEach(e=>{ctx.fillStyle=e.type=="small"?"red":e.type=="medium"?"pink":"purple"; ctx.fillRect(e.x,e.y,e.w,e.h);});
+            if(boss){ctx.fillStyle="purple"; ctx.fillRect(boss.x,boss.y,boss.w,boss.h);}
+            explosions.forEach(ex=>{ctx.fillStyle=`rgb(${255-ex.size*5},${100},0)`; ctx.beginPath(); ctx.arc(ex.x+20,ex.y+20,ex.size,0,Math.PI*2); ctx.fill();});
+        }
+
+        function loop(){update(); draw(); requestAnimationFrame(loop);}
+        loop();
+
+        function hit(a,b){return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;}
+
+        function gameOver(){running=false; saveScore(); document.getElementById("gameover").style.display="block";}
+        function saveScore(){
+            let name = document.getElementById("playerName").value || "Player";
+            scoresCol.add({name,score,stage}).then(updateLeaderboard);
+        }
+
+        window.restart = function(){
+            score=0; bullets=[]; enemies=[]; enemyBullets=[]; explosions=[]; boss=null; stage=1; running=true; 
+            document.getElementById("gameover").style.display="none"; 
+            document.getElementById("stage").innerText=1;
+        }
+    })();
+
     var disqus_config = function () {
-    this.page.url = window.location.href;
-    this.page.identifier = "myfamily-3";
+        this.page.url = window.location.href;
+        this.page.identifier = "myfamily-3";
     };
 
     (function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = 'https://myfamily-3.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
+        var d = document, s = d.createElement('script');
+        s.src = 'https://myfamily-3.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
     })();
-
     </script>
     <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
 </body>
