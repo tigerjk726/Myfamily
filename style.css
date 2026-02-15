@@ -9,7 +9,7 @@
     --shadow-color: rgba(0,0,0,0.1);
 }
 
-[data-theme="dark"] {
+.dark-theme {
     --primary-color: #4dabf7;
     --secondary-color: #adb5bd;
     --background-color: #121212;
@@ -437,7 +437,7 @@ footer {
     transition: 0.3s;
 }
 
-[data-theme="dark"] #recommendation-modal .close-button {
+.dark-theme #recommendation-modal .close-button {
     color: var(--text-color);
 }
 
