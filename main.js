@@ -45,16 +45,16 @@ document.addEventListener('DOMContentLoaded', () => {
         Fun: document.getElementById('fun-links-list')
     };
 
-    // --- Modal Elements ---
-    const modal = document.getElementById('image-modal');
-    const modalImg = document.getElementById('modal-image');
-    const closeButton = document.getElementsByClassName('close-button')[0];
-
-    if(closeButton) {
-        closeButton.onclick = function() {
-            modal.style.display = "none";
+    // --- Generic Modal Closing Logic (FIXED) ---
+    const allCloseButtons = document.querySelectorAll('.close-button');
+    allCloseButtons.forEach(button => {
+        button.onclick = function() {
+            const modal = this.closest('.modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
         }
-    }
+    });
 
     // --- YouTube Player --- 
     let player;
@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
         list.appendChild(li);
     }
 
-    // --- Recommendations Logic (CLEANED) ---
+    // --- Recommendations Logic (RE-FIXED) ---
     const recommendationsCollection = db.collection('recommendations');
     const recommendationForm = document.getElementById('add-recommendation-form');
     const recommendationCategory = document.getElementById('recommendation-category');
@@ -196,13 +196,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const recommendationModal = document.getElementById('recommendation-modal');
     const recommendationModalTitle = document.getElementById('recommendation-modal-title');
     const recommendationModalDetails = document.getElementById('recommendation-modal-details');
-    const recommendationModalCloseButton = document.querySelector('#recommendation-modal .close-button');
-
-    if(recommendationModalCloseButton) {
-        recommendationModalCloseButton.onclick = function() {
-            if(recommendationModal) recommendationModal.style.display = "none";
-        }
-    }
 
     function updateRecommendationForm() {
         if (!recommendationCategory) return;
@@ -305,6 +298,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- Photo Gallery Logic (Cloudinary + Firestore) ---
+    const imageModal = document.getElementById('image-modal');
+    const modalImg = document.getElementById('modal-image');
+
     async function loadAndDisplayImages() {
         if(!galleryContainer) return;
         galleryContainer.innerHTML = '';
@@ -320,8 +316,8 @@ document.addEventListener('DOMContentLoaded', () => {
         item.className = 'gallery-item';
         item.innerHTML = `<img src="${url}" alt="Gallery image">`;
         item.addEventListener('click', () => {
-            if(modal) {
-                modal.style.display = "block";
+            if(imageModal) {
+                imageModal.style.display = "block";
                 modalImg.src = url;
             }
         });
