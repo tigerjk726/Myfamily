@@ -368,6 +368,58 @@ section#home {
     color: #e44d26;
 }
 
+/* Game Section */
+#game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+}
+
+#game-container iframe {
+    border: 4px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 8px 16px var(--shadow-color);
+    max-width: 100%;
+    margin-bottom: 20px;
+}
+
+#game-score-form-container, #leaderboard-container {
+    width: 80%;
+    max-width: 800px;
+    margin-top: 20px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--card-background);
+}
+
+#leaderboard-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#leaderboard-list li {
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 1.3rem;
+}
+
+#leaderboard-list li:last-child {
+    border-bottom: none;
+}
+
+#leaderboard-list li strong {
+    color: var(--primary-color);
+    margin-right: 15px;
+}
+
+#leaderboard-list li em {
+    font-weight: bold;
+    color: var(--secondary-color);
+}
+
 
 /* Footer */
 footer {
@@ -472,4 +524,6 @@ footer {
     .modal-content, #recommendation-modal .modal-content {
         width: 95%;
     }
+    #game-container iframe { width: 100%; height: 450px; }
+    #game-score-form-container, #leaderboard-container { width: 95%; }
 }

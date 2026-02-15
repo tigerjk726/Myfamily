@@ -22,6 +22,7 @@
                 <li><a href="#gallery">Gallery</a></li>
                 <li><a href="#info">Info</a></li>
                 <li><a href="#recommendation">Recommendation</a></li>
+                <li><a href="#game">Game</a></li>
                 <li><a href="#comments">Comments</a></li>
             </ul>
         </nav>
@@ -189,6 +190,32 @@
                 <div class="recommendation-category-container">
                     <h3>Movies</h3>
                     <div id="movie-list" class="recommendation-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="game">
+            <h2>Game Zone</h2>
+            <div id="game-container">
+                <h3>1942</h3>
+                <iframe src="https://www.retrogames.me/arcade/1942-revision-b.html?utm_source=chatgpt.com#google_vignette" width="800" height="600" frameborder="0"></iframe>
+                <div id="game-score-form-container">
+                    <h3>Record Your Score</h3>
+                    <form id="add-score-form">
+                        <div class="form-group">
+                            <label for="player-name">Name:</label>
+                            <input type="text" id="player-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="player-score">Score:</label>
+                            <input type="number" id="player-score" required>
+                        </div>
+                        <button type="submit">Submit Score</button>
+                    </form>
+                </div>
+                <div id="leaderboard-container">
+                    <h3>Leaderboard - 1942</h3>
+                    <ol id="leaderboard-list"></ol>
                 </div>
             </div>
         </section>
