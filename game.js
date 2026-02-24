@@ -21,7 +21,7 @@
         const MIN_BUILDING_HEIGHT = 50;
         const STAR_COUNT = 5000;
         const DAY_NIGHT_CYCLE_MINUTES = 10; // Duration of a full day/night cycle
-        const ASSETS_DIR = 'vibe-jet/assets/';
+        const ASSETS_DIR = 'assets/';
         // const MODEL_URL = 'https://unpkg.com/three@0.162.0/examples/models/gltf/Flamingo.glb'; // <-- REPLACE WITH YOUR AIRCRAFT MODEL URL (.glb/.gltf)
         const MODEL_URL = `${ASSETS_DIR}/shenyang_j-11.glb`; // <-- Use local filename
         const MODEL_SCALE = 0.8; // <-- ADJUST THIS scale to fit your model size
@@ -820,7 +820,7 @@
                 context.textAlign = 'center';
                 context.textBaseline = 'middle';
                 // Load custom font
-                const font = new FontFace('SF Hollywood Hills', 'url(vibe-jet/assets/hollywood.ttf)');
+                const font = new FontFace('SF Hollywood Hills', 'url(assets/hollywood.ttf)');
                 font.load().then(() => {
                     document.fonts.add(font);
                     
