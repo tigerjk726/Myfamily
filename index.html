@@ -81,9 +81,7 @@
                 <button id="upload-button">Upload Photo</button>
                 <progress id="upload-progress" value="0" max="100" style="display: none;"></progress>
             </div>
-            <div id="gallery-container">
-                <!-- Uploaded photos will be displayed here -->
-            </div>
+            <div id="gallery-container"></div>
         </section>
 
         <section id="info">
@@ -145,13 +143,11 @@
                         </select>
                     </div>
 
-                    <!-- Common field for all -->
                     <div class="form-group">
                         <label for="recommendation-title">Title:</label>
                         <input type="text" id="recommendation-title" required>
                     </div>
 
-                    <!-- Movie specific fields -->
                     <div class="form-group movie-field">
                         <label for="recommendation-date">Date:</label>
                         <input type="date" id="recommendation-date">
@@ -165,7 +161,6 @@
                         </select>
                     </div>
 
-                    <!-- Book/Music specific fields -->
                     <div class="form-group book-music-field" id="recommendation-field1-group">
                         <label for="recommendation-field1" id="recommendation-field1-label">Author:</label>
                         <input type="text" id="recommendation-field1">
@@ -205,6 +200,27 @@
         <section id="game">
             <h2>3D Flight Game</h2>
             <canvas id="flight-game-canvas"></canvas>
+            <div id="loading-indicator" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 24px; background-color: rgba(0,0,0,0.7); padding: 20px; border-radius: 10px;">Loading Game...</div>
+            <div id="game-ui">
+                <div class="info-panel">
+                    <div>Speed: <span id="speed">0</span> km/h</div>
+                    <div>Altitude: <span id="altitude">0</span> m</div>
+                    <div>Players: <span id="players-count">1</span></div>
+                </div>
+                <div class="score-panel">
+                    <div>Time: <span id="timer">120</span>s</div>
+                    <div>Score: <span id="score">0</span></div>
+                    <div>High Score: <span id="high-score">0</span></div>
+                </div>
+                <div class="controls-guide">
+                    <strong>Controls:</strong><br>
+                    - <strong>W/S or ↑/↓:</strong> Pitch<br>
+                    - <strong>A/D or ←/→:</strong> Yaw<br>
+                    - <strong>Q/E:</strong> Roll<br>
+                    - <strong>Shift:</strong> Boost<br>
+                    - <strong>Mouse Click:</strong> Shoot
+                </div>
+            </div>
         </section>
 
         <section id="comments">
