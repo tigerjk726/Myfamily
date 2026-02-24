@@ -1,0 +1,2110 @@
+
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        // import { OrbitControls } from 'three/addons/controls/OrbitControls.js'; // Optional for debugging
+
+        // --- Configuration ---
+        const WEBSOCKET_URL = 'ws://localhost:8080'; // Adjust if your server is elsewhere
+        const PLAYER_SPEED = 200.0; // Base speed units/sec
+        const AFTERBURNER_MULTIPLIER = 3.0;
+        const ROLL_SPEED = Math.PI * 1.0; // Radians per second
+        const PITCH_SPEED = Math.PI * 0.8; // Radians per second
+        const YAW_SPEED = Math.PI * 0.5; // Radians per second
+        const DAMPING = 0.95; // Velocity damping factor
+        const CAMERA_BASE_FOV = 75;
+        const CAMERA_MAX_FOV_BOOST = 25; // Additional FOV at max speed boost
+        const UPDATE_INTERVAL_MS = 100; // Send updates every 100ms (10 Hz)
+        const GROUND_SIZE = 8000;
+        const GROUND_SEGMENTS = 100; // Segments for ground geometry/hills
+        const BUILDING_COUNT = 200;
+        const MAX_BUILDING_HEIGHT = 400;
+        const MIN_BUILDING_HEIGHT = 50;
+        const STAR_COUNT = 5000;
+        const DAY_NIGHT_CYCLE_MINUTES = 10; // Duration of a full day/night cycle
+        const ASSETS_DIR = 'vibe-jet/assets/';
+        // const MODEL_URL = 'https://unpkg.com/three@0.162.0/examples/models/gltf/Flamingo.glb'; // <-- REPLACE WITH YOUR AIRCRAFT MODEL URL (.glb/.gltf)
+        const MODEL_URL = `${ASSETS_DIR}/shenyang_j-11.glb`; // <-- Use local filename
+        const MODEL_SCALE = 0.8; // <-- ADJUST THIS scale to fit your model size
+        const OTHER_PLAYER_COLOR = 0x00aaff; // A blue tint for other players
+        // --- Terrain & Tree Constants ---
+        const TERRAIN_AMPLITUDE = 50; // Max height of hills (Adjusted from 150)
+        const TERRAIN_FREQUENCY = (8 * Math.PI * 2) / GROUND_SIZE; // How wavy. Higher value = more, smaller hills. Try a value relative to the size, aiming for ~5-10 waves across.
+        const TREE_COUNT = 7000; // Number of trees (adjust based on performance)
+        const TRUNK_HEIGHT = 10;
+        const TRUNK_RADIUS = 2.0;
+        const FOLIAGE_HEIGHT = 20;
+        const FOLIAGE_RADIUS = 8;
+        // --- Cloud Constants ---
+        const CLOUD_COUNT = 200; // Number of cloud particles
+        const CLOUD_SIZE = 1000; // Base size of each cloud particle
+        const CLOUD_ALTITUDE_MIN = 600; // Minimum height for clouds
+        const CLOUD_ALTITUDE_MAX = 1200; // Maximum height for clouds
+        const CLOUD_AREA_XZ = GROUND_SIZE * 1.5; // How far clouds spread horizontally
+        const CLOUD_DRIFT_SPEED = 5.0; // How fast clouds move horizontally
+        const CLOUD_TEXTURE_URL = `${ASSETS_DIR}/cloud10.png`; // Example texture
+        // --- Road Constants ---
+        const ROAD_COUNT = 5; // Number of road segments
+        const ROAD_WIDTH = 30; // Width of the roads
+        const ROAD_MIN_LENGTH = 1000;
+        const ROAD_MAX_LENGTH = 2000;
+        const ROAD_SEGMENT_LENGTH = 10; // How finely to subdivide the road mesh along its length
+        const ROAD_THICKNESS_OFFSET = 0.2; // Place roads slightly above terrain
+        const ROAD_TEXTURE_URL = `${ASSETS_DIR}/road.jpg`; // Example texture
+
+        // --- Global Variables ---
+        let scene, camera, renderer, clock, skyLight, sunLight;
+        let playerAircraft = null; // Initialize as null
+        let playerVelocity, playerAngularVelocity;
+        let controls = { forward: 0, backward: 0, left: 0, right: 0, up: 0, down: 0, boost: 0 };
+        let ws;
+        let playerId = null;
+        let otherPlayers = new Map(); // Map<playerId, { mesh: THREE.Mesh, lastUpdate: number }>
+        let buildingBoundingBoxes = [];
+        let lastUpdateTime = 0;
+        let isColliding = false;
+        let sunAngle = Math.PI / 4; // Start in morning/afternoon
+        let loadedModelTemplate = null; // To store the loaded model for cloning
+        let loadingManager = null;      // Optional for loading progress
+        let loadingIndicator = null;    // Simple DOM element for loading message
+        let clouds = null;              // Hold the Points object for animation
+        let roadTexture = null;         // To store the loaded road texture
+
+        // --- Initialization ---
+        function init() {
+            // Basic Setup
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(CAMERA_BASE_FOV, window.innerWidth / window.innerHeight, 0.1, 20000);
+            renderer = new THREE.WebGLRenderer({ antialias: true, canvas: document.getElementById('flight-game-canvas') });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer shadows
+            document.body.appendChild(renderer.domElement);
+            clock = new THREE.Clock();
+
+            // --- Get Loading Indicator ---
+            loadingIndicator = document.getElementById('loading-indicator');
+
+            // Lighting (Day/Night)
+            skyLight = new THREE.HemisphereLight(0x87ceeb, 0x000000, 0.6); // Sky, Ground, Intensity
+            scene.add(skyLight);
+
+            sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            sunLight.position.set(0, 1000, 1000); // Initial position
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048; // Higher resolution shadows
+            sunLight.shadow.mapSize.height = 2048;
+            sunLight.shadow.camera.near = 100;
+            sunLight.shadow.camera.far = 5000;
+            sunLight.shadow.camera.left = -GROUND_SIZE / 2;
+            sunLight.shadow.camera.right = GROUND_SIZE / 2;
+            sunLight.shadow.camera.top = GROUND_SIZE / 2;
+            sunLight.shadow.camera.bottom = -GROUND_SIZE / 2;
+            scene.add(sunLight);
+            scene.add(sunLight.target); // Important for directional light targeting
+
+            // Fog
+            scene.fog = new THREE.Fog(0xcccccc, 1000, 15000);
+
+            // Ground
+            // const groundGeometry = new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE);
+            // const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x555555, side: THREE.DoubleSide });
+            // const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            // ground.rotation.x = -Math.PI / 2;
+            // ground.receiveShadow = true;
+            // scene.add(ground);
+            createGround();
+
+            // Populate Landscape, Buildings
+            populateLandscape();
+
+            // Stars
+            createStars();
+
+            // --- Load Assets & Initialize ---
+            loadResources(); // <--- Start loading resources
+
+            // Player Aircraft
+            // createPlayerAircraft(); // WRONG PLACE - should be in initializeGame
+            // Controls Setup
+            // setupControls(); // WRONG PLACE - should be in initializeGame
+            // WebSocket Setup
+            // setupWebSocket(); // WRONG PLACE - should be in initializeGame
+
+            // Handle Window Resize
+            window.addEventListener('resize', onWindowResize, false);
+
+            // Start Animation Loop (will be started later in initializeGame)
+            // animate();
+        }
+
+        function showLoadingIndicator(show) {
+            if (loadingIndicator) {
+                loadingIndicator.style.display = show ? 'block' : 'none';
+            }
+        }
+
+        // Loading for the aircraft model alongside  the road texture
+        function loadResources() {
+            showLoadingIndicator(true);
+            // Use ONE loading manager for all resources if possible
+            loadingManager = new THREE.LoadingManager(
+                // --- Manager onLoad ---
+                () => {
+                    console.log("All resources loaded.");
+                    initializeGame(); // Initialize game ONLY after everything loads
+                },
+                // --- Manager onProgress (Optional) ---
+                (url, itemsLoaded, itemsTotal) => {
+                    // console.log(`Loading file: ${url} (${itemsLoaded}/${itemsTotal})`);
+                    // You could update loading indicator here:
+                    // loadingIndicator.textContent = `Loading ${itemsLoaded}/${itemsTotal}...`;
+                },
+                // --- Manager onError ---
+                (url) => {
+                    console.error('There was an error loading ' + url);
+                    showLoadingIndicator(false);
+                    // Maybe display a more specific error?
+                    displayError("Failed to load critical resources. Please check console and refresh.");
+                }
+            );
+
+            // --- Load Aircraft Model ---
+            const gltfLoader = new GLTFLoader(loadingManager);
+            gltfLoader.load(MODEL_URL, (gltf) => {
+                console.log("Aircraft model loaded.");
+                loadedModelTemplate = gltf.scene; // Store the loaded scene
+                loadedModelTemplate.scale.set(MODEL_SCALE, MODEL_SCALE, MODEL_SCALE); // Apply settings to the template once
+                // Ensure model casts shadows (traverse the loaded scene)
+                loadedModelTemplate.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        // Optional: Also allow receiving shadows if needed
+                        // child.receiveShadow = true;
+                    }
+                });
+
+                // --- IMPORTANT: Rotate template if needed ---
+                // Models might not be oriented along +Z by default.
+                // Add rotations here to align the template correctly.
+
+                // Previous attempts:
+                // loadedModelTemplate.rotateX(Math.PI);
+                // loadedModelTemplate.rotateY(Math.PI);
+                // loadedModelTemplate.rotateZ(Math.PI);
+
+                // New approach: Set Euler angles directly for better control
+                // This will set the model to have its nose pointing forward (+Z)
+                // and its top side facing up (+Y)
+                loadedModelTemplate.rotation.set(0, Math.PI, 0);
+
+                // Uncomment alternatives if the above doesn't work:
+                // Alternative 1:
+                // loadedModelTemplate.rotation.set(0, 0, 0); // Reset orientation
+                // Alternative 2: 
+                // loadedModelTemplate.rotation.set(Math.PI/2, 0, 0); // Pitch 90 degrees
+            } /* no progress/error needed here, manager handles it */);
+
+            // --- Load Road Texture ---
+            const textureLoader = new THREE.TextureLoader(loadingManager);
+            textureLoader.load(ROAD_TEXTURE_URL, (texture) => {
+                console.log("Road texture loaded.");
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.RepeatWrapping;
+                roadTexture = texture; // Store loaded texture globally
+            });
+
+            // --- Load Ground Texture (already uses its own loader, but could be added to manager) ---
+            // Keep the existing createGround function which has its own loader for now
+            // Alternatively, move ground texture loading here and pass texture to createGround
+
+
+            /*
+            loadingManager = new THREE.LoadingManager();
+            const loader = new GLTFLoader(loadingManager);
+
+            loader.load(
+                MODEL_URL,
+                // --- Success Callback ---
+                (gltf) => {
+                    console.log("Model loaded successfully.");
+                    loadedModelTemplate = gltf.scene; // Store the loaded scene
+
+                    // --- Apply settings to the template once ---
+                    loadedModelTemplate.scale.set(MODEL_SCALE, MODEL_SCALE, MODEL_SCALE);
+
+                    // Ensure model casts shadows (traverse the loaded scene)
+                    loadedModelTemplate.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            // Optional: Also allow receiving shadows if needed
+                            // child.receiveShadow = true;
+                        }
+                    });
+
+                    // --- IMPORTANT: Rotate template if needed ---
+                    // Models might not be oriented along +Z by default.
+                    // Add rotations here to align the template correctly.
+                    
+                    // Previous attempts:
+                    // loadedModelTemplate.rotateX(Math.PI);
+                    // loadedModelTemplate.rotateY(Math.PI);
+                    // loadedModelTemplate.rotateZ(Math.PI);
+                    
+                    // New approach: Set Euler angles directly for better control
+                    // This will set the model to have its nose pointing forward (+Z)
+                    // and its top side facing up (+Y)
+                    loadedModelTemplate.rotation.set(0, Math.PI, 0);
+                    
+                    // Uncomment alternatives if the above doesn't work:
+                    // Alternative 1:
+                    // loadedModelTemplate.rotation.set(0, 0, 0); // Reset orientation
+                    
+                    // Alternative 2: 
+                    // loadedModelTemplate.rotation.set(Math.PI/2, 0, 0); // Pitch 90 degrees
+
+                    initializeGame(); // Proceed with game setup
+                },
+                // --- Progress Callback (Optional) ---
+                (xhr) => {
+                    // console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+                    // You could update the loading indicator text here
+                },
+                // --- Error Callback ---
+                (error) => {
+                    console.error('An error happened during model loading:', error);
+                    showLoadingIndicator(false);
+                    displayError("Failed to load aircraft model. Please check console and refresh.");
+                }
+            );
+            */
+        }
+
+        function initializeGame() {
+            // initializeGame was modified slightly to ensure it ONLY runs via the LoadingManager
+
+            // Check if essential resources are loaded (redundant if manager's onLoad is used, but safe)
+            if (!loadedModelTemplate || !roadTexture) {
+                console.error("Essential resources not ready for initialization!");
+                // Display error maybe? The manager's onError should ideally catch this.
+                return;
+            }
+
+            // Only hide indicator once we are truly ready to init
+            showLoadingIndicator(false); // Hide loading indicator
+            console.log("Initializing game...");
+
+            // --- Create Player Aircraft (now clones the loaded model) ---
+            createPlayerAircraft();
+
+            // --- Setup Controls ---
+            setupControls();
+
+            // --- WebSocket Setup ---
+            setupWebSocket();
+
+            createTrees(TREE_COUNT);
+
+            createClouds();
+
+            createRoads();
+
+            // --- Start Animation Loop ---
+            animate(); // <-- START the loop HERE
+            console.log("Game initialized and animation loop started.");
+        }
+
+        function createBuildings() {
+            const buildingMaterial = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.8, metalness: 0.2 });
+            const buildingGeometry = new THREE.BoxGeometry(1, 1, 1); // Base geometry
+
+            for (let i = 0; i < BUILDING_COUNT; i++) {
+                const height = Math.random() * (MAX_BUILDING_HEIGHT - MIN_BUILDING_HEIGHT) + MIN_BUILDING_HEIGHT;
+                const width = Math.random() * 40 + 20;
+                const depth = Math.random() * 40 + 20;
+
+                const building = new THREE.Mesh(buildingGeometry, buildingMaterial.clone()); // Clone material if needed
+                building.scale.set(width, height, depth);
+
+                const x = (Math.random() - 0.5) * (GROUND_SIZE * 0.9); // Keep away from edge slightly
+                const z = (Math.random() - 0.5) * (GROUND_SIZE * 0.9);
+                building.position.set(x, height / 2, z);
+
+                building.castShadow = true;
+                building.receiveShadow = true;
+                scene.add(building);
+
+                // Store bounding box for collision
+                const box = new THREE.Box3().setFromObject(building);
+                buildingBoundingBoxes.push(box);
+            }
+        }
+
+        // This will be similar to the old `createBuildings`, but with more variation.
+        function createSkyscrapers(count) {
+            console.log("Creating skyscrapers...");
+            const buildingMaterial = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.8, metalness: 0.2 });
+            const buildingGeometry = new THREE.BoxGeometry(1, 1, 1); // Base geometry
+
+            for (let i = 0; i < count; i++) {
+                const height = MIN_BUILDING_HEIGHT + Math.random() * (MAX_BUILDING_HEIGHT - MIN_BUILDING_HEIGHT);
+                // More width/depth variation
+                const width = Math.random() * 50 + 20;
+                const depth = Math.random() * 50 + 20;
+
+                // Clone material for potential color variation
+                const materialInstance = buildingMaterial.clone();
+                // Randomly vary color slightly
+                materialInstance.color.setHSL(0, 0, 0.5 + Math.random() * 0.3); // Shades of grey
+
+                const building = new THREE.Mesh(buildingGeometry, materialInstance);
+                building.scale.set(width, height, depth);
+
+                const x = (Math.random() - 0.5) * (GROUND_SIZE * 0.9);
+                const z = (Math.random() - 0.5) * (GROUND_SIZE * 0.9);
+                const y = getTerrainHeight(x, z) + height / 2; // Place base on terrain
+
+                // Avoid placing skyscrapers too low in valleys
+                if (y - height / 2 < 0) continue; // Skip if base is below Y=0
+
+                building.position.set(x, y, z);
+                building.castShadow = true;
+                building.receiveShadow = true;
+                scene.add(building);
+
+                // Store bounding box (important: update position based on terrain height)
+                const box = new THREE.Box3().setFromObject(building);
+                buildingBoundingBoxes.push(box);
+            }
+            console.log("Skyscrapers created.");
+        }
+
+        // Generates clusters of smaller boxes.
+        function createHouses(clusterCount) {
+            console.log("Creating house clusters...");
+            const houseMaterial = new THREE.MeshStandardMaterial({ color: 0xcc6633, roughness: 0.9 }); // Brownish color
+            const houseGeometry = new THREE.BoxGeometry(1, 1, 1);
+            const housesPerCluster = 10 + Math.floor(Math.random() * 15);
+            const clusterRadius = 150;
+
+            for (let c = 0; c < clusterCount; c++) {
+                // Find a suitable center point for the cluster (on relatively flat ground?)
+                let clusterX, clusterZ, clusterY;
+                do {
+                    clusterX = (Math.random() - 0.5) * (GROUND_SIZE * 0.8);
+                    clusterZ = (Math.random() - 0.5) * (GROUND_SIZE * 0.8);
+                    clusterY = getTerrainHeight(clusterX, clusterZ);
+                } while (clusterY < 5 || clusterY > TERRAIN_AMPLITUDE * 0.5); // Avoid water/peaks
+
+                for (let i = 0; i < housesPerCluster; i++) {
+                    const height = 5 + Math.random() * 5;
+                    const width = 8 + Math.random() * 8;
+                    const depth = 8 + Math.random() * 8;
+
+                    const house = new THREE.Mesh(houseGeometry, houseMaterial); // Can reuse material
+                    house.scale.set(width, height, depth);
+
+                    // Place relative to cluster center
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = Math.random() * clusterRadius;
+                    const x = clusterX + Math.cos(angle) * radius;
+                    const z = clusterZ + Math.sin(angle) * radius;
+                    const y = getTerrainHeight(x, z) + height / 2; // Place base on terrain
+
+                    // Simple check to avoid houses floating too high above cluster center or sinking too low
+                    if (Math.abs(y - height/2 - clusterY) > 20) continue; // Skip if terrain is too steep here
+
+                    house.position.set(x, y, z);
+                    house.rotation.y = Math.random() * Math.PI; // Random orientation
+                    house.castShadow = true;
+                    house.receiveShadow = true;
+                    scene.add(house);
+
+                    const box = new THREE.Box3().setFromObject(house);
+                    buildingBoundingBoxes.push(box); // Add to collisions
+                }
+            }
+            console.log("House clusters created.");
+        }
+
+        // Creates flat, blue circles on the terrain.
+        function createPonds(count) {
+            console.log("Creating ponds...");
+            const pondMaterial = new THREE.MeshStandardMaterial({
+                color: 0x3366aa,
+                roughness: 0.2,
+                metalness: 0.1,
+                transparent: true,
+                opacity: 0.8
+            });
+            const pondSegments = 32; // Make circles smooth
+
+            for (let i = 0; i < count; i++) {
+                const radius = 50 + Math.random() * 100;
+                const pondGeometry = new THREE.CircleGeometry(radius, pondSegments);
+
+                let x, z, y;
+                // Try to find lower ground for ponds
+                do {
+                    x = (Math.random() - 0.5) * (GROUND_SIZE * 0.9);
+                    z = (Math.random() - 0.5) * (GROUND_SIZE * 0.9);
+                    y = getTerrainHeight(x, z);
+                } while (y > TERRAIN_AMPLITUDE * 0.3); // Prefer lower areas
+
+                const pond = new THREE.Mesh(pondGeometry, pondMaterial);
+                // Position slightly below terrain height and rotate flat
+                pond.position.set(x, y - 0.5, z); // Sink slightly
+                pond.rotation.x = -Math.PI / 2;
+                // Ponds don't cast shadows, but can receive them
+                pond.receiveShadow = true;
+                scene.add(pond);
+            }
+            console.log("Ponds created.");
+        }
+
+        function Castle() {
+            console.log("Creating castle...");
+            const castleGroup = new THREE.Group();
+            
+            // Main castle body - large central keep
+            const keepGeometry = new THREE.BoxGeometry(40, 60, 40);
+            const stoneMaterial = new THREE.MeshPhongMaterial({
+                color: 0x808080,
+                flatShading: true
+            });
+            const keep = new THREE.Mesh(keepGeometry, stoneMaterial);
+            keep.position.y = 30;
+            castleGroup.add(keep);
+            
+            // Create text banner above castle door
+            const createCastleTextTexture = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 256;
+                canvas.height = 128;
+                
+                const context = canvas.getContext('2d');
+                
+                // Clear canvas with transparent background
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Text
+                context.font = 'bold 36px system-ui';
+                context.fillStyle = 'white';
+                context.textAlign = 'center';
+                context.textBaseline = 'middle';
+                context.fillText('CEDRIC.AI', canvas.width / 2, canvas.height / 3);
+                context.fillText('CASTLE', canvas.width / 2, canvas.height * 2/3);
+                
+                return new THREE.CanvasTexture(canvas);
+            };
+
+            // Create banner with castle text
+            const castleBannerGeometry = new THREE.PlaneGeometry(30, 15);
+            const castleBannerMaterial = new THREE.MeshBasicMaterial({ 
+                map: createCastleTextTexture(),
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.9,
+                fog: false
+            });
+            const castleBanner = new THREE.Mesh(castleBannerGeometry, castleBannerMaterial);
+            
+            // Position banner above castle door
+            castleBanner.position.set(0, 40, 20.1); // Slightly in front of castle wall
+            castleGroup.add(castleBanner);
+
+            // Four corner towers
+            const towerGeometry = new THREE.CylinderGeometry(6, 8, 70, 8);
+            const towerPositions = [
+                [-22, 35, -22],
+                [22, 35, -22],
+                [-22, 35, 22],
+                [22, 35, 22]
+            ];
+            
+            towerPositions.forEach((pos, index) => {
+                const tower = new THREE.Mesh(towerGeometry, stoneMaterial);
+                tower.position.set(...pos);
+                castleGroup.add(tower);
+                
+                // Add conical roof to each tower
+                const roofGeometry = new THREE.ConeGeometry(8, 15, 8);
+                const roofMaterial = new THREE.MeshPhongMaterial({
+                    color: 0x8B4513
+                });
+                const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+                roof.position.set(pos[0], pos[1] + 42, pos[2]);
+                castleGroup.add(roof);
+            });
+            
+            // Add crenellations
+            for(let x = -18; x <= 18; x += 4) {
+                for(let z = -18; z <= 18; z += 4) {
+                    if(x === -18 || x === 18 || z === -18 || z === 18) {
+                        const merlon = new THREE.Mesh(
+                            new THREE.BoxGeometry(3, 4, 3),
+                            stoneMaterial
+                        );
+                        merlon.position.set(x, 62, z);
+                        castleGroup.add(merlon);
+                    }
+                }
+            }
+            
+            // extra
+            castleGroup.scale.set(3.0, 3.0, 3.0);
+
+            // Position the castle
+            // castleGroup.position.set(100, 35.2, -300);
+            castleGroup.position.set(2000, 10, 1000);
+            return castleGroup;
+        }
+
+        function createCastle() {
+            // Add after other scene setup code
+            const castle = Castle();
+            scene.add(castle);
+            console.log("Castle created.");
+        }
+
+        function BigHouse() {
+            console.log("Creating big house...");
+            // houses with pointy roofs
+            const houseGroup = new THREE.Group();
+            const scale = 10; // TODO: change to use houseGroup scale later
+            
+            // Random house size
+            const width = (4 * scale) + Math.random() * 4;
+            const height = (6 * scale) + Math.random() * 8;
+            const depth = (4 * scale) + Math.random() * 4;
+            
+            // Main building
+            const buildingGeometry = new THREE.BoxGeometry(width, height, depth);
+            const buildingMaterial = new THREE.MeshPhongMaterial({
+                color: new THREE.Color(
+                    0.7 + Math.random() * 0.3,
+                    0.7 + Math.random() * 0.3,
+                    0.7 + Math.random() * 0.3
+                )
+            });
+            const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+            building.position.y = height/2;
+            houseGroup.add(building);
+            
+            // Roof (pyramid style)
+            const roofHeight = height * 0.3;
+            const roofGeometry = new THREE.ConeGeometry(width * 0.8, roofHeight, 4);
+            const roofMaterial = new THREE.MeshPhongMaterial({
+                color: Math.random() > 0.5 ? 0x8B4513 : 0xA0522D // Brown variations
+            });
+            const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+            roof.position.y = height + roofHeight/2;
+            roof.rotation.y = Math.PI/4; // Rotate 45 degrees for better look
+            houseGroup.add(roof);
+            
+            // Windows
+            const windowSize = width * 0.2;
+            const windowGeometry = new THREE.BoxGeometry(windowSize, windowSize, 0.1);
+            const windowMaterial = new THREE.MeshPhongMaterial({
+                color: 0xaaaaff,
+                emissive: 0x444444
+            });
+            
+            // Add multiple windows
+            const windowPositions = [
+                [-width/4, height/2, depth/2],
+                [width/4, height/2, depth/2],
+                [-width/4, height*0.75, depth/2],
+                [width/4, height*0.75, depth/2]
+            ];
+            
+            windowPositions.forEach(pos => {
+                const window = new THREE.Mesh(windowGeometry, windowMaterial);
+                window.position.set(...pos);
+                houseGroup.add(window);
+            });
+            
+            // Door
+            const doorWidth = width * 0.3;
+            const doorHeight = height * 0.4;
+            const doorGeometry = new THREE.BoxGeometry(doorWidth, doorHeight, 0.1);
+            const doorMaterial = new THREE.MeshPhongMaterial({
+                color: 0x8B4513
+            });
+            const door = new THREE.Mesh(doorGeometry, doorMaterial);
+            door.position.set(0, doorHeight/2, depth/2);
+            houseGroup.add(door);
+            
+            return houseGroup;
+        }
+
+        // Create multiple houses
+        function createBigHouse(count) {
+            const houses = [];
+
+            for(let i = 0; i < count; i++) {
+                const house = BigHouse();
+
+                const x = (Math.random() - 0.5) * (GROUND_SIZE * 0.9); // Keep away from edge slightly
+                const z = (Math.random() - 0.5) * (GROUND_SIZE * 0.9);
+                const y = getTerrainHeight(x, z); // Place base slightly above ground? Or adjust based on shape size
+                house.position.set(x, y, z);
+
+                house.rotation.y = Math.random() * Math.PI * 2; // Random rotation
+                houses.push(house);
+                scene.add(house);
+            }
+
+            console.log("Big houses created.");
+        }
+
+        // Robot on land
+        function createGiantRobot() {
+            console.log("Creating giant robot...");
+
+            // Create a floating robot
+            const robotGroup = new THREE.Group();
+            
+            // Robot body
+            const bodyGeometry = new THREE.BoxGeometry(10, 14, 6);
+            const bodyMaterial = new THREE.MeshPhongMaterial({
+                color: 0xb894db, // Blue color
+                shininess: 70,
+                fog: false
+            });
+            const robotBody = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            robotGroup.add(robotBody);
+            
+            // Robot head
+            const headGeometry = new THREE.BoxGeometry(8, 6, 6);
+            const headMaterial = new THREE.MeshPhongMaterial({
+                color: 0x935dc9, // Darker blue
+                shininess: 70,
+                fog: false
+            });
+            const robotHead = new THREE.Mesh(headGeometry, headMaterial);
+            robotHead.position.y = 10; // Position on top of body
+            robotGroup.add(robotHead);
+            
+            // Robot eyes
+            const eyeGeometry = new THREE.SphereGeometry(1, 16, 16);
+            const eyeMaterial = new THREE.MeshPhongMaterial({
+                color: 0xff0000, // Red eyes
+                emissive: 0xff0000,
+                emissiveIntensity: 0.8,
+                fog: false
+            });
+            
+            // Left eye
+            const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            leftEye.position.set(-2, 10, 3);
+            robotGroup.add(leftEye);
+            
+            // Right eye
+            const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            rightEye.position.set(2, 10, 3);
+            robotGroup.add(rightEye);
+            
+            // Robot arms
+            const armGeometry = new THREE.BoxGeometry(2, 8, 2);
+            const armMaterial = new THREE.MeshPhongMaterial({
+                color: 0xb894db,
+                shininess: 70,
+                fog: false
+            });
+            
+            // Left arm
+            const leftArm = new THREE.Mesh(armGeometry, armMaterial);
+            leftArm.position.set(-6, 0, 0);
+            robotGroup.add(leftArm);
+            
+            // Right arm
+            const rightArm = new THREE.Mesh(armGeometry, armMaterial);
+            rightArm.position.set(6, 0, 0);
+            robotGroup.add(rightArm);
+            
+            // Robot legs
+            const legGeometry = new THREE.BoxGeometry(3, 8, 3);
+            const legMaterial = new THREE.MeshPhongMaterial({
+                color: 0x935dc9,
+                shininess: 70,
+                fog: false
+            });
+            
+            // Left leg
+            const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
+            leftLeg.position.set(-3, -11, 0);
+            robotGroup.add(leftLeg);
+            
+            // Right leg
+            const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
+            rightLeg.position.set(3, -11, 0);
+            robotGroup.add(rightLeg);
+            
+            // Create LINDY.AI banner
+            const bannerCanvas = document.createElement('canvas');
+            const bannerContext = bannerCanvas.getContext('2d');
+            bannerCanvas.width = 512;
+            bannerCanvas.height = 128;
+            
+            // Set banner background
+            bannerContext.fillStyle = '#935dc9'; // Blue background
+            bannerContext.fillRect(0, 0, bannerCanvas.width, bannerCanvas.height);
+            
+            // Add text
+            bannerContext.font = 'bold 60px system-ui';
+            bannerContext.textAlign = 'center';
+            bannerContext.textBaseline = 'middle';
+            bannerContext.fillStyle = 'white';
+            bannerContext.fillText('NEO.AI', bannerCanvas.width / 2, bannerCanvas.height / 2);
+            
+            const bannerTexture = new THREE.CanvasTexture(bannerCanvas);
+            const bannerMaterial = new THREE.MeshBasicMaterial({
+                map: bannerTexture,
+                transparent: true,
+                side: THREE.DoubleSide,
+                fog: false
+            });
+            
+            const bannerGeometry = new THREE.PlaneGeometry(16, 4);
+            const banner = new THREE.Mesh(bannerGeometry, bannerMaterial);
+            banner.position.y = 18; // Position above the robot
+            robotGroup.add(banner);
+            
+            // extra
+            robotGroup.scale.set(8.0, 8.0, 8.0);
+
+            const x = -800;
+            const z = 2000 > GROUND_SIZE ? GROUND_SIZE * 0.9 : 2000;
+            const y = getTerrainHeight(x, z) + 120; // Place base slightly above ground? Or adjust based on shape size
+            robotGroup.position.set(x, y, z);
+
+            robotGroup.rotation.y = 15.0;
+            
+            scene.add(robotGroup);
+
+            console.log("Giant robot created.");
+        }
+
+        // Add after other scene setup code, before the animation loop
+        function Mountain() {
+            console.log("Creating mountain...");
+
+            let mountainSign;
+
+            const mountainGroup = new THREE.Group();
+            
+            // Create main mountain peak
+            const mountainGeometry = new THREE.ConeGeometry(100, 200, 6);
+            const mountainMaterial = new THREE.MeshPhongMaterial({
+                color: 0x8B4513, // Brown base color
+                flatShading: true
+            });
+            
+            const mountain = new THREE.Mesh(mountainGeometry, mountainMaterial);
+            mountain.position.y = 100; // Half height to place base at ground level
+            mountainGroup.add(mountain);
+
+            // Create Hollywood-style sign text texture
+            const createMountainSignTextTexture = () => {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = 1024;
+                canvas.height = 256;
+                
+                // Transparent background
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Text style
+                context.font = 'bold 60px system-ui';
+                context.textAlign = 'center';
+                context.textBaseline = 'middle';
+                // Load custom font
+                const font = new FontFace('SF Hollywood Hills', 'url(vibe-jet/assets/hollywood.ttf)');
+                font.load().then(() => {
+                    document.fonts.add(font);
+                    
+                    // Add black stroke
+                    context.font = 'bold 60px "SF Hollywood Hills"';
+                    context.strokeStyle = '#000000';
+                    
+                    // Add white fill
+                    context.fillStyle = '#FFFFFF';
+                    context.fillText('CEDRICCHEE.COM', canvas.width/2, canvas.height/2);
+                });
+                return new THREE.CanvasTexture(canvas);
+            };
+
+            // Create sign banner
+            const mountainSignGeometry = new THREE.PlaneGeometry(120, 30);
+            const mountainSignMaterial = new THREE.MeshBasicMaterial({
+                map: createMountainSignTextTexture(),
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+            mountainSign = new THREE.Mesh(mountainSignGeometry, mountainSignMaterial);
+            
+            // Position sign on mountain slope
+            mountainSign.position.set(-60, 70, 40);
+            mountainSign.rotation.z=0;
+            mountainSign.rotation.x=0;
+            mountainSign.rotation.y=-1.1;
+            mountainGroup.add(mountainSign);
+
+
+            // Add snow cap
+            const snowCapGeometry = new THREE.ConeGeometry(40, 50, 6);
+            const snowMaterial = new THREE.MeshPhongMaterial({
+                color: 0xFFFFFF, // White snow
+                flatShading: true
+            });
+            
+            const snowCap = new THREE.Mesh(snowCapGeometry, snowMaterial);
+            snowCap.position.y = 175; // Position at top of mountain
+            mountainGroup.add(snowCap);
+            
+            // Add some smaller peaks around the main one
+            const smallPeakPositions = [
+                [-50, -30, -40],
+                [60, -50, 30],
+                [-30, -60, 50]
+            ];
+            
+            smallPeakPositions.forEach(pos => {
+                const smallPeakHeight = 80 + Math.random() * 60;
+                const smallPeakGeometry = new THREE.ConeGeometry(30 + Math.random() * 20, smallPeakHeight, 5);
+                const smallPeak = new THREE.Mesh(smallPeakGeometry, mountainMaterial);
+                
+                smallPeak.position.set(
+                    pos[0],
+                    smallPeakHeight / 2, // Half height to place base at ground level
+                    pos[1]
+                );
+                
+                // Random rotation for variety
+                smallPeak.rotation.y = Math.random() * Math.PI;
+                mountainGroup.add(smallPeak);
+                
+                // Add small snow caps to some peaks
+                if (Math.random() > 0.3) {
+                    const smallSnowGeometry = new THREE.ConeGeometry(15, 20, 5);
+                    const smallSnow = new THREE.Mesh(smallSnowGeometry, snowMaterial);
+                    smallSnow.position.y = smallPeakHeight * 0.4;
+                    smallPeak.add(smallSnow);
+                }
+            });
+            
+            // Add trees on the lower slopes
+            for (let i = 0; i < 50; i++) {
+                // Calculate position on the mountain slope
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 70 + Math.random() * 100; // Increased minimum and maximum distance
+                const x = Math.cos(angle) * distance;
+                const z = Math.sin(angle) * distance;
+                
+                // Calculate height based on distance from center (higher = lower on slope)
+                const height = 10 + Math.random() * 15;
+                
+                // Create tree trunk
+                const trunkGeometry = new THREE.CylinderGeometry(2, 3, height, 8);
+                const trunkMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
+                const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+                
+                // Create tree top (pine tree style)
+                const treeTopGeometry = new THREE.ConeGeometry(8, height * 1.5, 8);
+                const treeTopMaterial = new THREE.MeshPhongMaterial({ 
+                    color: 0x006400, // Dark green
+                    flatShading: true
+                });
+                const treeTop = new THREE.Mesh(treeTopGeometry, treeTopMaterial);
+                treeTop.position.y = height * 0.75;
+                
+                // Create tree group
+                const tree = new THREE.Group();
+                tree.add(trunk);
+                tree.add(treeTop);
+                
+                // Position tree on mountain slope
+                tree.position.set(x, height/2, z);
+                
+                // Random rotation and slight tilt based on slope
+                tree.rotation.y = Math.random() * Math.PI * 2;
+                const slopeTilt = distance / 100; // More tilt further from center
+                tree.rotation.x = (Math.random() - 0.5) * 0.2 * slopeTilt;
+                tree.rotation.z = (Math.random() - 0.5) * 0.2 * slopeTilt;
+                
+                mountainGroup.add(tree);
+            }
+
+            // Position the mountain in some nice area
+            mountainGroup.position.set(-2000, 0, -800);
+            
+            // extra
+            mountainGroup.scale.set(2.0, 2.0, 2.0);
+            mountainGroup.rotation.y = 15.0;
+
+            return mountainGroup;
+        }
+
+        // Create and add mountain to scene
+        function createMountain() {
+            const mountain = Mountain();
+            scene.add(mountain);
+
+            console.log("Mountain created.");
+        }
+
+        // Create UFO with logo
+        function UFO() {
+            console.log("Creating UFO ...");
+
+            const ufoGroup = new THREE.Group();
+            
+            // Create the main UFO body (saucer shape)
+            const ufoBodyGeometry = new THREE.SphereGeometry(10, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+            
+            // Load Basecamp logo texture for the UFO body
+            const ufoTextureLoader = new THREE.TextureLoader();
+            // const ufoTexture = ufoTextureLoader.load('/assets/logorythms.png');
+            
+            // Configure texture to repeat in a pattern
+            // ufoTexture.wrapS = THREE.RepeatWrapping;
+            // ufoTexture.wrapT = THREE.RepeatWrapping;
+            // ufoTexture.repeat.set(5, 4);
+            
+            const ufoBodyMaterial = new THREE.MeshPhongMaterial({
+                // map: ufoTexture,
+                color: 0xC0C0C0, // Silver/metallic color
+                shininess: 80,
+                fog: false
+            });
+            
+            const ufoBody = new THREE.Mesh(ufoBodyGeometry, ufoBodyMaterial);
+            ufoBody.scale.y = 0.3; // Flatten the sphere to make it saucer-like
+            ufoGroup.add(ufoBody);
+            // Create the bottom part of the UFO with the same texture
+            const ufoBottomGeometry = new THREE.SphereGeometry(7, 32, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 4);
+            const ufoBottomMaterial = new THREE.MeshPhongMaterial({
+                // map: ufoTexture,
+                color: 0xC0C0C0, // Silver/metallic color
+                shininess: 60,
+                fog: false
+            });
+            const ufoBottom = new THREE.Mesh(ufoBottomGeometry, ufoBottomMaterial);
+            ufoBottom.position.y = 0;;
+            ufoBottom.scale.y = 0.5;
+            ufoGroup.add(ufoBottom);
+            
+
+            // Create the cockpit/dome on top of the UFO
+            const ufoCockpitGeometry = new THREE.SphereGeometry(4, 32, 32);
+
+            // Load the globe texture for the cockpit
+            const ufoGlobeTextureLoader = new THREE.TextureLoader();
+            // const ufoGlobeTexture = ufoGlobeTextureLoader.load('/assets/logorythms_globe.png');
+
+            // Configure the texture to wrap properly around the sphere
+            // ufoGlobeTexture.wrapS = THREE.RepeatWrapping;
+            // ufoGlobeTexture.wrapT = THREE.ClampToEdgeWrapping; // Clamp vertical to avoid stretching at poles
+            // ufoGlobeTexture.repeat.set(2, 1);
+
+            const ufoCockpitMaterial = new THREE.MeshPhongMaterial({
+                // map: ufoGlobeTexture,
+                transparent: true,
+                opacity: 0.9, // Slightly transparent for a glass-like effect
+                shininess: 100,
+                fog: false
+            });
+
+            const ufoCockpit = new THREE.Mesh(ufoCockpitGeometry, ufoCockpitMaterial);
+            ufoGroup.add(ufoCockpit);
+
+            
+            ufoCockpit.rotation.y=0.1;
+            ufoCockpit.position.y=3;
+            
+            
+            // Add a top plate for the main disc's bottom side
+            const ufoTopBottomPlateGeometry = new THREE.CircleGeometry(10, 32);
+            const ufoTopBottomPlateMaterial = new THREE.MeshPhongMaterial({
+                // map: ufoTexture,
+                color: 0xC0C0C0, // Silver/metallic color
+                shininess: 60,
+                side: THREE.DoubleSide,
+                fog: false
+            });
+            const ufoTopBottomPlate = new THREE.Mesh(ufoTopBottomPlateGeometry, ufoTopBottomPlateMaterial);
+            ufoTopBottomPlate.position.y = 0;
+            ufoTopBottomPlate.rotation.x = Math.PI / 2; // Make it horizontal
+            ufoGroup.add(ufoTopBottomPlate);
+            
+            // Create lights under the UFO
+            const ufoLightPositions = [
+                [5, -2, 0], [-5, -2, 0], [0, -2, 5], [0, -2, -5]
+            ];
+            
+            ufoLightPositions.forEach(pos => {
+                const ufoLightGeometry = new THREE.SphereGeometry(0.8, 16, 16);
+                const ufoLightMaterial = new THREE.MeshBasicMaterial({
+                    color: 0x00FFFF, // Cyan color
+                    fog: false
+                });
+                const ufoLight = new THREE.Mesh(ufoLightGeometry, ufoLightMaterial);
+                ufoLight.position.set(pos[0], pos[1], pos[2]);
+                ufoGroup.add(ufoLight);
+            });
+            
+            // Position the UFO in the scene
+            // ufoGroup.position.set(200, 1000, 5000);
+            ufoGroup.position.set(0, 40, 70);
+
+            return ufoGroup;
+        }
+
+        function createUFO() {
+            const ufoGroup = UFO();
+            // extra
+            ufoGroup.scale.set(2.0, 2.0, 2.0);
+            scene.add(ufoGroup);
+
+            // Animation for the UFO
+            const ufoAnimation = () => {
+                const ufoTime = Date.now() * 0.001;
+                
+                // Circular flight pattern closer to player aircraft (0,0)
+                ufoGroup.position.x = 0 + Math.sin(ufoTime * 0.2) * 500;
+                ufoGroup.position.z = -70 + Math.cos(ufoTime * 0.2) * 500;
+                
+                // Lower flying height between 50-100
+                ufoGroup.position.y = 200 + Math.sin(ufoTime * 0.5) * 10;
+                
+                // Slight tilting in the direction of movement
+                ufoGroup.rotation.z = Math.sin(ufoTime * 0.2) * 0.1;
+                ufoGroup.rotation.x = Math.cos(ufoTime * 0.2) * 0.1;
+                
+                // Update UFO sound based on position
+                // updateUFOSound();
+                
+                requestAnimationFrame(ufoAnimation);
+            };
+
+            ufoAnimation();
+
+            console.log("UFO created.");
+        }
+
+        function Blimp(mainBodyColor) {
+            console.log('Creating blimp ...');
+
+            // Create blimp group
+            const blimp3Group = new THREE.Group();
+
+            // Load texture for blimp body
+            // const blimp3Texture = new THREE.TextureLoader().load('/assets/logorythms.png');
+            // blimp3Texture.wrapS = THREE.RepeatWrapping;
+            // blimp3Texture.wrapT = THREE.RepeatWrapping;
+            // blimp3Texture.repeat.set(5, 3);
+
+            // Main blimp body (ellipsoid) - increased length by 1.5x
+            const blimp3MainBodyGeometry = new THREE.SphereGeometry(20, 32, 32);
+            blimp3MainBodyGeometry.scale(1, 1, 2.7); // Changed from 1.8 to 2.7 (1.5x longer)
+            const blimp3MainBodyMaterial = new THREE.MeshPhongMaterial({ 
+                // map: blimp3Texture,
+                color: mainBodyColor
+            });
+            const blimp3MainBody = new THREE.Mesh(blimp3MainBodyGeometry, blimp3MainBodyMaterial);
+            blimp3Group.add(blimp3MainBody);
+
+            // Blimp tail section - moved further back
+            const blimp3TailGeometry = new THREE.ConeGeometry(15, 20, 32);
+            blimp3TailGeometry.rotateX(Math.PI / 2);
+            blimp3TailGeometry.translate(0, 0, 45); // Changed from 30 to 45 to match the longer body
+            const blimp3TailMaterial = new THREE.MeshPhongMaterial({ 
+                // map: blimp3Texture,
+                color: 0x00008B
+            });
+            const blimp3Tail = new THREE.Mesh(blimp3TailGeometry, blimp3TailMaterial);
+            blimp3Group.add(blimp3Tail);
+
+            // Gondola (cabin beneath blimp)
+            const blimp3GondolaGeometry = new THREE.BoxGeometry(10, 5, 7);
+            const blimp3GondolaMaterial = new THREE.MeshPhongMaterial({ color: 0x404040 }); // Dark grey
+            const blimp3Gondola = new THREE.Mesh(blimp3GondolaGeometry, blimp3GondolaMaterial);
+            blimp3Gondola.position.y = -20;
+            blimp3Group.add(blimp3Gondola);
+
+            // Fins (rudders)
+            const blimp3FinGeometry = new THREE.ConeGeometry(8, 15, 4);
+            blimp3FinGeometry.rotateX(Math.PI / 2);
+
+            const blimp3FinMaterial = new THREE.MeshPhongMaterial({ 
+                // map: blimp3Texture,
+                color: 0xFF0000
+            });
+
+            // Vertical fin - moved further back
+            const blimp3VerticalFin = new THREE.Mesh(blimp3FinGeometry, blimp3FinMaterial);
+            blimp3VerticalFin.position.set(0, 0, 50); // Changed from 35 to 50
+            blimp3VerticalFin.rotation.x = Math.PI / 2;
+            blimp3Group.add(blimp3VerticalFin);
+
+            // Horizontal fin - moved further back
+            const blimp3HorizontalFin = new THREE.Mesh(blimp3FinGeometry, blimp3FinMaterial);
+            blimp3HorizontalFin.position.set(0, 0, 50); // Changed from 35 to 50
+            blimp3HorizontalFin.rotation.z = Math.PI / 2;
+            blimp3Group.add(blimp3HorizontalFin);
+            
+            return blimp3Group;
+        }
+
+        function createBlimp() {
+            // 
+            // First blimp
+            // 
+            const blimp3Group = Blimp(0xFFFF00);
+            // Position the blimp high in the sky
+            blimp3Group.position.set(-550, 500, -800); // Fixed position, altitude, negative Z moves it forward
+            // Rotate the blimp 90 degrees leftwards (counter-clockwise around Y axis)
+            blimp3Group.rotation.y=-1.5;
+            scene.add(blimp3Group);
+
+            // 
+            // Second blimp
+            // 
+            const blimp3Group2 = Blimp(0xFF0000);
+            blimp3Group2.position.set(1000, 1000, -2000);
+            blimp3Group2.rotation.y=1.5;
+            scene.add(blimp3Group2);
+
+            // 
+            // Third blimp
+            // 
+            const blimp3Group3 = Blimp(0xFF007F);
+            blimp3Group3.position.set(500, 600, 1000);
+            blimp3Group3.rotation.y=2.0;
+            scene.add(blimp3Group3);
+
+            console.log('Blimp created');
+        }
+
+        // Places a few large, distinct procedural shapes.
+        function createLandmarks(count) {
+            console.log("Creating landmarks...");
+            const landmarkMaterials = [
+                new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.3, metalness: 0.8 }), // Gold
+                new THREE.MeshStandardMaterial({ color: 0xff4444, roughness: 0.7 }), // Red
+                new THREE.MeshStandardMaterial({ color: 0x44ff44, roughness: 0.7 }), // Green
+                new THREE.MeshStandardMaterial({ color: 0xaaaaff, roughness: 0.1, metalness: 0.2, transmission: 0.8, transparent: true, opacity: 0.9 }) // Crystal/Glass
+            ];
+            const landmarkGeometries = [
+                new THREE.IcosahedronGeometry(30, 0), // Size 30
+                new THREE.TorusKnotGeometry(20, 8, 100, 16), // Size ~28
+                new THREE.DodecahedronGeometry(25, 0), // Size 25
+                new THREE.SphereGeometry(40, 32, 16) // Size 40
+            ];
+
+            for (let i = 0; i < count; i++) {
+                const geometry = landmarkGeometries[i % landmarkGeometries.length];
+                const material = landmarkMaterials[i % landmarkMaterials.length];
+                const landmark = new THREE.Mesh(geometry, material);
+
+                // Place them further apart
+                const x = (Math.random() - 0.5) * (GROUND_SIZE * 0.7);
+                const z = (Math.random() - 0.5) * (GROUND_SIZE * 0.7);
+                const y = getTerrainHeight(x, z) + 40; // Place base slightly above ground? Or adjust based on shape size
+
+                landmark.position.set(x, y, z);
+                landmark.rotation.set(Math.random()*0.2, Math.random()*Math.PI*2, Math.random()*0.2);
+                landmark.castShadow = true;
+                landmark.receiveShadow = true;
+                scene.add(landmark);
+
+                // Add bounding box for collision
+                const box = new THREE.Box3().setFromObject(landmark);
+                buildingBoundingBoxes.push(box);
+            }
+            console.log("Landmarks created.");
+        }
+
+        function populateLandscape() {
+            console.log("Populating landscape...");
+            buildingBoundingBoxes = []; // <-- CLEAR bounding boxes before repopulating
+            createSkyscrapers(BUILDING_COUNT); // Function to create tall buildings
+            createHouses(20); // Function to create clusters of houses (e.g., 15 clusters)
+            createPonds(30); // Function to create ponds
+            // createLandmarks(10); // Function to create placeholder landmarks
+            createCastle();
+            createBigHouse(50);
+            createGiantRobot();
+            createMountain();
+            createUFO();
+            createBlimp();
+            console.log("Landscape population complete.");
+        }
+
+        function createStars() {
+            const starGeometry = new THREE.BufferGeometry();
+            const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1.5, sizeAttenuation: true });
+            const starVertices = [];
+            for (let i = 0; i < STAR_COUNT; i++) {
+                const x = (Math.random() - 0.5) * 15000;
+                const y = Math.random() * 5000 + 500; // Keep stars above a certain height
+                const z = (Math.random() - 0.5) * 15000;
+                // Ensure stars are far enough away
+                if(Math.sqrt(x*x + y*y + z*z) > 1000) {
+                     starVertices.push(x, y, z);
+                } else {
+                    i--; // retry if too close
+                }
+            }
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            const stars = new THREE.Points(starGeometry, starMaterial);
+            scene.add(stars);
+        }
+
+        function createGround() {
+            const textureLoader = new THREE.TextureLoader();
+            const grassTextureUrl = 'https://threejs.org/examples/textures/terrain/grasslight-big.jpg'; // Example texture
+            // If CORS error: download this jpg, put it next to game.html, and use:
+            // const grassTextureUrl = 'grasslight-big.jpg';
+
+            console.log("Loading ground texture...");
+            textureLoader.load(
+                grassTextureUrl,
+                // --- Success Callback (Texture Loaded) ---
+                (texture) => {
+                    console.log("Ground texture loaded.");
+                    // Configure texture
+                    texture.wrapS = THREE.RepeatWrapping;
+                    texture.wrapT = THREE.RepeatWrapping;
+                    const repeats = GROUND_SIZE / 100; // How many times texture repeats (adjust 100 based on texture size/look)
+                    texture.repeat.set(repeats, repeats);
+
+                    // --- Create Ground Geometry (Higher Segments) ---
+                    const groundGeometry = new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE, GROUND_SEGMENTS, GROUND_SEGMENTS);
+
+                    // --- Modify Vertices for Hills ---
+                    const positionAttribute = groundGeometry.attributes.position;
+                    const vertex = new THREE.Vector3();
+
+                    console.log("Generating terrain geometry...");
+                    for (let i = 0; i < positionAttribute.count; i++) {
+                        // Get the original vertex position (x, y, z=0) from the flat plane
+                        vertex.fromBufferAttribute(positionAttribute, i);
+
+                        // Calculate height based on the vertex's position on the XY plane
+                        const height = getTerrainHeight(vertex.x, vertex.y); // Use helper function (uses vertex.y before rotation)
+
+                        // Apply this calculated height to the Z coordinate of the vertex buffer
+                        // This Z value will become the world Y height after rotation
+                        positionAttribute.setZ(i, height); // Apply height to Z <-- SET Z, NOT Y
+
+                    }
+                    positionAttribute.needsUpdate = true; // Tell Three.js vertices have changed
+                    groundGeometry.computeVertexNormals(); // Recalculate normals for correct lighting
+                    console.log("Terrain geometry generated.");
+
+                    // --- Create Ground Material ---
+                    // Use wireframe for testing geometry, then switch back
+                    // const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+                    const groundMaterial = new THREE.MeshStandardMaterial({
+                        map: texture, // Apply the loaded texture
+                        // color: 0x555555, // Color is now mostly from texture
+                        side: THREE.DoubleSide, // Keep double side if needed, but maybe FrontSide is enough (Consider THREE.FrontSide if performance needed)
+                        roughness: 0.9, // Increase roughness for less shine
+                        metalness: 0.1
+                    });
+
+                    // --- Create Ground Mesh ---
+                    const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+                    // This rotation correctly turns the Z modifications into world Y height
+                    groundMesh.rotation.x = -Math.PI / 2;
+                    groundMesh.receiveShadow = true;
+                    scene.add(groundMesh);
+                    console.log("Ground mesh created and added to scene.");
+                },
+                // --- Progress Callback (Optional) ---
+                undefined, // Not using progress here
+                // --- Error Callback ---
+                (error) => {
+                    console.error('Failed to load ground texture:', error);
+                    // Fallback: Create simple grey ground if texture fails
+                    const groundGeometry = new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE);
+                    const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x555555, side: THREE.DoubleSide });
+                    const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+                    groundMesh.rotation.x = -Math.PI / 2;
+                    groundMesh.receiveShadow = true;
+                    scene.add(groundMesh);
+                    console.warn("Using fallback grey ground.");
+                }
+            );
+        }
+
+        function getTerrainHeight(worldX, worldZ) {
+            // Calculate height based on the same formula used in createGround
+            // Remember: world Z maps to the original plane's Y coordinate before rotation
+            const height = Math.sin(worldX * TERRAIN_FREQUENCY) *
+                        Math.cos(worldZ * TERRAIN_FREQUENCY) * // Use world Z here
+                        TERRAIN_AMPLITUDE;
+            return height;
+        }
+
+        function createPlayerAircraft() {
+            // Simple cone shape for the aircraft body
+            // const geometry = new THREE.ConeGeometry(2, 8, 8); // Radius, Height, Segments
+            // geometry.rotateX(Math.PI / 2); // Point forward along Z
+            // const material = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x330000 });
+            // playerAircraft = new THREE.Mesh(geometry, material);
+            // playerAircraft.position.set(0, 50, 0); // Start above ground
+            // playerAircraft.castShadow = true;
+            
+            if (!loadedModelTemplate) {
+                console.warn("Cannot create player aircraft, model template not loaded.");
+                return;
+            }
+            console.log("Creating player aircraft from template...");
+
+            // --- Clone the loaded model ---
+            playerAircraft = loadedModelTemplate.clone(); // Use THREE.SkeletonUtils.clone(loadedModelTemplate) if model is animated/skinned
+
+            // --- Set Initial Position ---
+            // Note: Scale and shadow settings are inherited from the template
+            playerAircraft.position.set(0, 50, 0);
+            
+            // --- Add to Scene ---
+            scene.add(playerAircraft);
+            console.log("Player aircraft added to scene at", playerAircraft.position);
+
+            // Initialize physics variables
+            // Ensure these are created AFTER playerAircraft is assigned
+            playerVelocity = new THREE.Vector3();
+            playerAngularVelocity = new THREE.Vector3();
+
+            // Attach camera to the player (adjust offset as needed)
+            // camera.position.set(0, 3, -10); // Behind and slightly above
+            // camera.position.set(0, 5, -20); // Further back (Z=-20) and slightly higher (Y=5)
+            // playerAircraft.add(camera);
+        }
+
+        function createTrees(count) {
+            console.log(`Creating ${count} trees...`);
+
+            // --- Define Geometry & Material ONCE ---
+            const trunkGeometry = new THREE.CylinderGeometry(TRUNK_RADIUS, TRUNK_RADIUS, TRUNK_HEIGHT, 8);
+            const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.9 }); // Brown
+
+            const foliageGeometry = new THREE.ConeGeometry(FOLIAGE_RADIUS, FOLIAGE_HEIGHT, 8);
+            const foliageMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.9 }); // Forest Green
+
+            // --- Create Instanced Meshes ---
+            // Allocate space for 'count' instances
+            const trunkInstancedMesh = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, count);
+            const foliageInstancedMesh = new THREE.InstancedMesh(foliageGeometry, foliageMaterial, count);
+
+            trunkInstancedMesh.castShadow = true;
+            trunkInstancedMesh.receiveShadow = true; // Trunks can receive shadows from foliage
+            foliageInstancedMesh.castShadow = true;
+            // foliageInstancedMesh.receiveShadow = false; // Foliage usually doesn't receive much shadow
+
+            // --- Calculate and Set Instance Transforms ---
+            const matrix = new THREE.Matrix4(); // Reusable matrix
+            const position = new THREE.Vector3();
+            const quaternion = new THREE.Quaternion();
+            const scale = new THREE.Vector3();
+            let actualTreeCount = 0; // Count how many trees are actually placed
+
+            for (let i = 0; i < count; i++) {
+                // --- Position ---
+                const x = (Math.random() - 0.5) * GROUND_SIZE * 0.95; // Keep slightly away from edges
+                const z = (Math.random() - 0.5) * GROUND_SIZE * 0.95;
+                const y = getTerrainHeight(x, z);
+
+                // Simple check: avoid placing trees too low (e.g., underwater if amplitude is large)
+                // or too high on steep peaks, or inside buildings
+                const minTreeHeight = -10; // Adjust as needed
+                const maxTreeHeight = TERRAIN_AMPLITUDE * 0.8; // Avoid highest peaks maybe?
+                let buildingCollision = false;
+                const treeBox = new THREE.Box3( // Approximate bounding box for the tree base
+                    new THREE.Vector3(x - FOLIAGE_RADIUS, y, z - FOLIAGE_RADIUS),
+                    new THREE.Vector3(x + FOLIAGE_RADIUS, y + TRUNK_HEIGHT + FOLIAGE_HEIGHT, z + FOLIAGE_RADIUS)
+                );
+                for(const buildingBox of buildingBoundingBoxes) {
+                    if (treeBox.intersectsBox(buildingBox)) {
+                        buildingCollision = true;
+                        break;
+                    }
+                }
+
+                if (y > minTreeHeight && y < maxTreeHeight && !buildingCollision) {
+                    // --- Trunk Transform ---
+                    position.set(x, y + TRUNK_HEIGHT / 2, z); // Position base of trunk at terrain height
+                    quaternion.setFromEuler(new THREE.Euler(0, Math.random() * Math.PI * 2, 0)); // Random Y rotation
+                    scale.setScalar(0.8 + Math.random() * 0.4); // Slight random scale
+
+                    matrix.compose(position, quaternion, scale);
+                    trunkInstancedMesh.setMatrixAt(actualTreeCount, matrix);
+
+                    // --- Foliage Transform (adjust Y position) ---
+                    position.set(x, y + TRUNK_HEIGHT + FOLIAGE_HEIGHT / 2 - 1, z); // Position foliage above trunk (slight overlap)
+                    // Use same random rotation and scale as trunk
+                    matrix.compose(position, quaternion, scale);
+                    foliageInstancedMesh.setMatrixAt(actualTreeCount, matrix);
+
+                    actualTreeCount++; // Increment count of successfully placed trees
+                }
+                // If tree position is invalid, simply skip this iteration (i)
+            }
+
+            // Important: Update the count for the InstancedMesh if some trees were skipped
+            trunkInstancedMesh.count = actualTreeCount;
+            foliageInstancedMesh.count = actualTreeCount;
+
+            // --- Add to Scene ---
+            scene.add(trunkInstancedMesh);
+            scene.add(foliageInstancedMesh);
+            console.log(`Successfully created ${actualTreeCount} trees.`);
+        }
+
+        function createClouds() {
+            console.log("Creating clouds...");
+            const textureLoader = new THREE.TextureLoader();
+
+            textureLoader.load(
+                CLOUD_TEXTURE_URL,
+                // Success Callback (Texture Loaded)
+                (cloudTexture) => {
+                    console.log("Cloud texture loaded.");
+
+                    const cloudGeometry = new THREE.BufferGeometry();
+                    const positions = [];
+
+                    // Create random positions for each cloud particle
+                    for (let i = 0; i < CLOUD_COUNT; i++) {
+                        const x = (Math.random() - 0.5) * CLOUD_AREA_XZ;
+                        const y = Math.random() * (CLOUD_ALTITUDE_MAX - CLOUD_ALTITUDE_MIN) + CLOUD_ALTITUDE_MIN;
+                        const z = (Math.random() - 0.5) * CLOUD_AREA_XZ;
+                        positions.push(x, y, z);
+                    }
+
+                    cloudGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+                    const cloudMaterial = new THREE.PointsMaterial({
+                        size: CLOUD_SIZE,
+                        map: cloudTexture,
+                        blending: THREE.AdditiveBlending, // Blend clouds nicely
+                        depthWrite: false, // Often needed for transparency
+                        transparent: true,
+                        opacity: 0.6, // Make clouds slightly translucent (adjust)
+                        sizeAttenuation: true, // Make distant clouds smaller
+                        color: 0xeeeeff // Slight blueish-white tint (adjust)
+                    });
+
+                    clouds = new THREE.Points(cloudGeometry, cloudMaterial); // Assign to global variable
+                    scene.add(clouds);
+                    console.log("Clouds created and added to scene.");
+
+                },
+                // Progress (Optional)
+                undefined,
+                // Error Callback
+                (error) => {
+                    console.error("Failed to load cloud texture:", error);
+                }
+            );
+        }
+
+        function createRoads() {
+            if (!roadTexture) {
+                console.warn("Road texture not loaded, skipping road creation.");
+                return;
+            }
+            console.log(`Creating ${ROAD_COUNT} road segments...`);
+
+            const roadMaterial = new THREE.MeshStandardMaterial({
+                map: roadTexture,
+                side: THREE.FrontSide, // Only need to see the top
+                roughness: 0.9,
+                metalness: 0.0,
+                polygonOffset: true, // Help prevent z-fighting with ground
+                polygonOffsetFactor: -1.0,
+                polygonOffsetUnits: -1.0
+            });
+
+            for (let i = 0; i < ROAD_COUNT; i++) {
+                // --- Generate Path ---
+                const x1 = (Math.random() - 0.5) * GROUND_SIZE;
+                const z1 = (Math.random() - 0.5) * GROUND_SIZE;
+                const angle = Math.random() * Math.PI * 2;
+                const length = ROAD_MIN_LENGTH + Math.random() * (ROAD_MAX_LENGTH - ROAD_MIN_LENGTH);
+                const x2 = x1 + Math.sin(angle) * length; // Use sin for X based on angle
+                const z2 = z1 + Math.cos(angle) * length; // Use cos for Z based on angle
+
+                // Clamp end points to stay roughly within bounds
+                const x2c = Math.max(-GROUND_SIZE/2, Math.min(GROUND_SIZE/2, x2));
+                const z2c = Math.max(-GROUND_SIZE/2, Math.min(GROUND_SIZE/2, z2));
+
+                const dx = x2c - x1;
+                const dz = z2c - z1;
+                const pathLength = Math.sqrt(dx*dx + dz*dz);
+
+                if (pathLength < ROAD_MIN_LENGTH) continue; // Skip if clamped path is too short
+
+                // --- Create & Deform Geometry ---
+                const lengthSegments = Math.max(1, Math.ceil(pathLength / ROAD_SEGMENT_LENGTH));
+                // Create plane geometry ALONG Y axis initially (width=X, length=Y)
+                const roadGeometry = new THREE.PlaneGeometry(ROAD_WIDTH, pathLength, 1, lengthSegments);
+                const positionAttribute = roadGeometry.attributes.position;
+                const tempVertex = new THREE.Vector3(); // To read original vertex positions
+
+                for (let j = 0; j < positionAttribute.count; j++) {
+                    tempVertex.fromBufferAttribute(positionAttribute, j); // Read local vertex (x, y, z=0)
+
+                    // 't' is the fraction along the road's length (mapping local Y to 0-1 range)
+                    const t = (tempVertex.y + pathLength / 2) / pathLength;
+                    // 'w' is the fraction across the road's width (mapping local X to -0.5 to 0.5 range)
+                    const w = tempVertex.x / ROAD_WIDTH;
+
+                    // Calculate the world XZ position for this vertex
+                    const worldX = x1 + dx * t;
+                    const worldZ = z1 + dz * t;
+
+                    // Calculate terrain height at this world position
+                    const terrainY = getTerrainHeight(worldX, worldZ);
+                    const roadY = terrainY + ROAD_THICKNESS_OFFSET; // Place slightly above terrain
+
+                    // Calculate world position offset based on road width and path direction perp.
+                    // Normal vector to path (dz, -dx), normalized
+                    const nx = dz / pathLength;
+                    const nz = -dx / pathLength;
+                    const offsetX = nx * w * ROAD_WIDTH;
+                    const offsetZ = nz * w * ROAD_WIDTH;
+
+                    // Set the vertex position in WORLD coordinates into the buffer's Z value (before mesh rotation)
+                    // This vertex's final world Y position
+                    positionAttribute.setZ(j, roadY);
+                    // Adjust the vertex's X and Y based on world pos + offset (mapping to unrotated plane's X/Y)
+                    positionAttribute.setX(j, worldX + offsetX);
+                    positionAttribute.setY(j, worldZ + offsetZ); // Store world Z in buffer Y before final mesh rotation
+                }
+
+                positionAttribute.needsUpdate = true;
+                roadGeometry.computeVertexNormals(); // Normals for lighting on the road
+
+                // --- Create Mesh ---
+                // Clone material for unique texture repeats per road segment
+                const materialInstance = roadMaterial.clone();
+                materialInstance.map = roadTexture.clone(); // Clone texture for unique repeat settings
+                materialInstance.map.needsUpdate = true;
+                // Repeat texture along the length; adjust V repeat based on aspect ratio/desired look
+                materialInstance.map.repeat.set(1, pathLength / ROAD_WIDTH);
+
+                const roadMesh = new THREE.Mesh(roadGeometry, materialInstance);
+
+                // --- Position & Orient Mesh ---
+                // The geometry vertices are now essentially in world positions, but stored in X, Y, Z buffer
+                // where Z holds the world Y height. We need to rotate the mesh to make Z become Y.
+                roadMesh.rotation.x = -Math.PI / 2;
+                // Position mesh at origin as vertices are world-relative (post-rotation)
+                roadMesh.position.set(0, 0, 0);
+
+                roadMesh.receiveShadow = true; // Roads receive shadows
+                scene.add(roadMesh);
+            }
+            console.log("Roads created.");
+        }
+
+        function setupControls() {
+            document.addEventListener('keydown', (event) => {
+                switch(event.code) {
+                    case 'KeyW': case 'ArrowUp':    controls.forward = 1; break;
+                    case 'KeyS': case 'ArrowDown':  controls.backward = 1; break; // Optional: Brake/Reverse?
+                    case 'KeyA': case 'ArrowLeft':  controls.left = 1; break; // Yaw left
+                    case 'KeyD': case 'ArrowRight': controls.right = 1; break; // Yaw right
+                    case 'KeyQ':                    controls.rollLeft = 1; break; // Roll left
+                    case 'KeyE':                    controls.rollRight = 1; break; // Roll right
+                    case 'ShiftLeft': case 'ShiftRight': controls.boost = 1; break;
+                    case 'ControlLeft': case 'ControlRight': controls.down = 1; break; // Pitch down
+                    case 'Space':                   controls.up = 1; break;     // Pitch up
+                }
+            });
+
+            document.addEventListener('keyup', (event) => {
+                 switch(event.code) {
+                    case 'KeyW': case 'ArrowUp':    controls.forward = 0; break;
+                    case 'KeyS': case 'ArrowDown':  controls.backward = 0; break;
+                    case 'KeyA': case 'ArrowLeft':  controls.left = 0; break;
+                    case 'KeyD': case 'ArrowRight': controls.right = 0; break;
+                    case 'KeyQ':                    controls.rollLeft = 0; break;
+                    case 'KeyE':                    controls.rollRight = 0; break;
+                    case 'ShiftLeft': case 'ShiftRight': controls.boost = 0; break;
+                    case 'ControlLeft': case 'ControlRight': controls.down = 0; break;
+                    case 'Space':                   controls.up = 0; break;
+                }
+            });
+        }
+
+        function setupWebSocket() {
+            ws = new WebSocket(WEBSOCKET_URL);
+
+            ws.onopen = () => {
+                console.log('WebSocket connection established');
+                // Maybe request initial game state or player ID here if needed
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    // console.log('Message from server:', message);
+
+                    switch(message.type) {
+                        case 'assign_id':
+                            playerId = message.id;
+                            console.log('Assigned player ID:', playerId);
+                            break;
+                        case 'player_update':
+                            if (message.id !== playerId) { // Update other players
+                                updateOtherPlayer(message.id, message.data);
+                            }
+                            break;
+                        case 'player_join':
+                            if (message.id !== playerId) {
+                                console.log('Player joined:', message.id);
+                                addOtherPlayer(message.id, message.data);
+                            }
+                            break;
+                        case 'player_leave':
+                            if (otherPlayers.has(message.id)) {
+                                console.log('Player left:', message.id);
+                                removeOtherPlayer(message.id);
+                            }
+                            break;
+                         case 'world_state': // Initial state for newly joined player
+                            message.players.forEach(playerData => {
+                                if (playerData.id !== playerId) {
+                                    addOtherPlayer(playerData.id, playerData.data);
+                                }
+                            });
+                            break;
+                        default:
+                            console.log('Unknown message type:', message.type);
+                    }
+                } catch (error) {
+                    console.error('Failed to parse message or process:', error);
+                }
+                updatePlayerCount();
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket Error:', error);
+                displayError("Connection error. Please refresh.");
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket connection closed');
+                playerId = null;
+                // Clear other players? Or show they disconnected?
+                otherPlayers.forEach(player => scene.remove(player.mesh));
+                otherPlayers.clear();
+                updatePlayerCount();
+                displayError("Disconnected. Please refresh.");
+            };
+        }
+
+        function displayError(message) {
+             const errorDiv = document.createElement('div');
+             errorDiv.style.position = 'absolute';
+             errorDiv.style.top = '50%';
+             errorDiv.style.left = '50%';
+             errorDiv.style.transform = 'translate(-50%, -50%)';
+             errorDiv.style.color = 'red';
+             errorDiv.style.backgroundColor = 'rgba(0,0,0,0.7)';
+             errorDiv.style.padding = '20px';
+             errorDiv.style.fontSize = '20px';
+             errorDiv.style.fontFamily = 'monospace';
+             errorDiv.textContent = message;
+             document.body.appendChild(errorDiv);
+        }
+
+        function addOtherPlayer(id, data) {
+            // Don't add if player already exists or the model template isn't loaded yet
+            if (otherPlayers.has(id) || !loadedModelTemplate) {
+                // console.log(`Skipping addOtherPlayer for ${id}: Already exists or template not ready.`);
+                return;
+            }
+
+            console.log(`Adding other player ${id} from template...`);
+            const otherAircraftMesh = loadedModelTemplate.clone(); // Use THREE.SkeletonUtils.clone if needed
+
+            // Use the same geometry/material for now, maybe different color later
+            // const geometry = new THREE.ConeGeometry(2, 8, 8);
+            // geometry.rotateX(Math.PI / 2);
+            // const material = new THREE.MeshStandardMaterial({ color: 0x0000ff }); // Blue for others
+            // const otherAircraft = new THREE.Mesh(geometry, material);
+            // otherAircraft.castShadow = true; // Other players cast shadows too
+
+            // Optional: Apply a visual tint or variation later if desired
+            // 
+            // Apply a visual difference (e.g., slight color tint) - This is complex
+            // and depends heavily on the model's material structure.
+            // Simple attempt: If materials are standard, try tinting.
+            otherAircraftMesh.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    if (Array.isArray(child.material)) { // Handle multi-materials
+                        child.material.forEach(mat => {
+                            if (mat.isMeshStandardMaterial) {
+                                // Create a unique material instance to avoid changing the template/other clones
+                                // Note: Cloning materials can be resource intensive
+                                // child.material = mat.clone();
+                                // child.material.color.multiplyScalar(0.7); // Example: Make it darker
+                                // A simpler tint might just modify emissive or add a colored light later
+                            }
+                        });
+                    } else if (child.material.isMeshStandardMaterial) {
+                        // child.material = child.material.clone();
+                        // child.material.color.multiplyScalar(0.7);
+                    }
+                }
+            });
+            // For now, let's skip complex material cloning/tinting and they'll look the same.
+        
+            // Set initial position and rotation from network data if provided
+            if (data && data.position && data.quaternion) {
+                try {
+                    otherAircraftMesh.position.fromArray(data.position);
+                    otherAircraftMesh.quaternion.fromArray(data.quaternion);
+                } catch (e) {
+                    console.error(`Error setting position/quaternion for player ${id}:`, e, data);
+                }
+            } else {
+                // Place at default spawn or origin if no data provided? Or hide until first update?
+                // For now, it will appear at (0,0,0) by default if no data.
+            }
+
+            // Add the mesh to the scene
+            scene.add(otherAircraftMesh);
+            otherPlayers.set(id, { mesh: otherAircraftMesh, lastUpdate: Date.now() });
+            
+            console.log(`Added player ${id} to scene.`);
+            updatePlayerCount(); // Update the player count display
+        }
+
+        function updateOtherPlayer(id, data) {
+            const player = otherPlayers.get(id);
+            if (player) {
+                // Simple interpolation could be added here for smoother movement
+                player.mesh.position.fromArray(data.position);
+                player.mesh.quaternion.fromArray(data.quaternion);
+                player.lastUpdate = Date.now();
+            } else {
+                // If we receive an update for a player we don't know, add them
+                addOtherPlayer(id, data);
+            }
+        }
+
+        function removeOtherPlayer(id) {
+            const player = otherPlayers.get(id);
+            if (player) {
+                scene.remove(player.mesh);
+                otherPlayers.delete(id);
+                console.log(`Removed player ${id} from scene.`);
+                updatePlayerCount();
+            }
+        }
+
+        // --- Game Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const deltaTime = clock.getDelta();
+
+            // --- Cloud Animation ---
+            // update cloud object position slightly each frame to simulate drifting.
+            if (clouds) {
+                // Simple drift along X axis
+                clouds.position.x += CLOUD_DRIFT_SPEED * deltaTime;
+                // Optional: Wrap clouds around if they go too far
+                if (clouds.position.x > CLOUD_AREA_XZ / 2) {
+                    clouds.position.x -= CLOUD_AREA_XZ;
+                }
+            }
+
+            updatePlayerMovement(deltaTime);
+            updateCameraFOV();
+            updateDayNightCycle(deltaTime);
+            checkCollisions();
+
+            // Send player state periodically
+            const now = Date.now();
+            if (ws && ws.readyState === WebSocket.OPEN && playerId && now - lastUpdateTime > UPDATE_INTERVAL_MS) {
+                sendPlayerUpdate();
+                lastUpdateTime = now;
+            }
+
+            // --- Manual Camera Following Logic ---
+            if (playerAircraft) {
+                // Define camera offset relative to the aircraft (behind, above)
+                // Reversed Z direction to match our updated forward vector
+                const relativeCameraOffset = new THREE.Vector3(0, 2, 10); // Positive Z now to stay behind the aircraft
+                
+                // Calculate the desired world position of the camera
+                const cameraOffset = relativeCameraOffset.applyQuaternion(playerAircraft.quaternion);
+                const desiredCameraPosition = playerAircraft.position.clone().add(cameraOffset);
+
+                // Smoothly move the camera to the desired position (lerp)
+                // Use 0.1 for smoothing, or 1.0 to snap instantly for testing
+                camera.position.lerp(desiredCameraPosition, 0.1);
+
+                // Make the camera look at a point slightly above the aircraft's center
+                const lookAtTarget = playerAircraft.position.clone().add(new THREE.Vector3(0, 1, 0)); // Look slightly above the origin
+                camera.lookAt(lookAtTarget);
+            }
+            
+            renderer.render(scene, camera);
+            updateInfoPanel();
+        }
+
+        function updatePlayerMovement(deltaTime) {
+            if (!playerAircraft) return;
+
+            const currentSpeed = playerVelocity.length();
+            const maxSpeed = PLAYER_SPEED * (controls.boost ? AFTERBURNER_MULTIPLIER : 1.0);
+
+            // --- Calculate Forces/Torques ---
+            let thrust = controls.forward ? PLAYER_SPEED * 5.0 : 0; // Acceleration force
+            thrust = thrust * (controls.boost ? AFTERBURNER_MULTIPLIER : 1.0);
+            // Optional: Add braking force if controls.backward is used
+            // if (controls.backward) thrust = -PLAYER_SPEED * 2.0;
+
+            let targetPitch = 0;
+            if (controls.up) targetPitch = PITCH_SPEED;
+            if (controls.down) targetPitch = -PITCH_SPEED;
+
+            let targetYaw = 0;
+            if (controls.left) targetYaw = YAW_SPEED;
+            if (controls.right) targetYaw = -YAW_SPEED;
+
+            let targetRoll = 0;
+            if (controls.rollLeft) targetRoll = ROLL_SPEED;
+            if (controls.rollRight) targetRoll = -ROLL_SPEED;
+
+            // --- Apply Angular Velocity ---
+            // Simple angular acceleration based on input
+            playerAngularVelocity.x += (targetPitch - playerAngularVelocity.x) * deltaTime * 5.0; // Pitch
+            playerAngularVelocity.y += (targetYaw - playerAngularVelocity.y) * deltaTime * 5.0;   // Yaw
+            playerAngularVelocity.z += (targetRoll - playerAngularVelocity.z) * deltaTime * 5.0; // Roll
+
+            // Apply damping to angular velocity
+            playerAngularVelocity.multiplyScalar(DAMPING);
+
+            // --- Apply Rotation ---
+            const deltaRotation = playerAngularVelocity.clone().multiplyScalar(deltaTime);
+            const qx = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), deltaRotation.x);
+            const qy = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaRotation.y);
+            const qz = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), deltaRotation.z);
+
+            // Apply rotations in aircraft's local frame
+            playerAircraft.quaternion.multiply(qx).multiply(qy).multiply(qz).normalize();
+
+
+            // --- Apply Linear Velocity ---
+            // Original: Forward is defined as +Z in model space
+            // const forwardVector = new THREE.Vector3(0, 0, 1).applyQuaternion(playerAircraft.quaternion);
+            
+            // Modified approach: Try using -Z as forward direction
+            const forwardVector = new THREE.Vector3(0, 0, -1).applyQuaternion(playerAircraft.quaternion);
+            
+            // Using the original approach with model rotations applied earlier
+            // const forwardVector = new THREE.Vector3(0, 0, 1).applyQuaternion(playerAircraft.quaternion);
+            const acceleration = forwardVector.multiplyScalar(thrust * deltaTime);
+
+            playerVelocity.add(acceleration);
+
+            // Apply damping/drag
+            const dragFactor = 1.0 - (0.5 * deltaTime); // Simple linear drag
+            playerVelocity.multiplyScalar(dragFactor);
+
+            // Clamp speed
+            if (playerVelocity.lengthSq() > maxSpeed * maxSpeed) {
+                playerVelocity.normalize().multiplyScalar(maxSpeed);
+            }
+
+             // Minimum speed to prevent floating still
+            const MIN_SPEED = 5.0;
+            if (currentSpeed < MIN_SPEED && thrust === 0) {
+                 playerVelocity.multiplyScalar(0.9); // Slow down faster when idle and slow
+                 if (currentSpeed < 0.1) playerVelocity.set(0,0,0);
+            }
+
+
+            // --- Update Position ---
+            const deltaPosition = playerVelocity.clone().multiplyScalar(deltaTime);
+            playerAircraft.position.add(deltaPosition);
+
+            // --- Ground Collision (Simple - Adjust Y level slightly) ---
+            // Since terrain has hills, Y=0 is no longer ground level everywhere.
+            // This check is INACCURATE but prevents falling through the absolute bottom.
+            const approximateGroundLevel = 10; // Raise slightly (adjust based on hill amplitude)
+            if (playerAircraft && playerAircraft.position.y < approximateGroundLevel + 1) { // +1 for aircraft size buffer
+                playerAircraft.position.y = approximateGroundLevel + 1;
+                if (playerVelocity) { // Check if playerVelocity exists
+                    playerVelocity.y = Math.max(0, playerVelocity.y * -0.5); // Bounce slightly
+                }
+            }
+        }
+
+        function updateCameraFOV() {
+            const speedRatio = playerVelocity.length() / (PLAYER_SPEED * AFTERBURNER_MULTIPLIER);
+            const targetFOV = CAMERA_BASE_FOV + speedRatio * CAMERA_MAX_FOV_BOOST;
+            // Smooth FOV change
+            camera.fov += (targetFOV - camera.fov) * 0.1;
+            camera.updateProjectionMatrix();
+        }
+
+        function updateDayNightCycle(deltaTime) {
+            const cycleSpeed = (2 * Math.PI) / (DAY_NIGHT_CYCLE_MINUTES * 60); // Radians per second
+            sunAngle += cycleSpeed * deltaTime;
+            sunAngle %= (2 * Math.PI); // Keep angle between 0 and 2PI
+
+            const sunY = Math.sin(sunAngle);
+            const sunX = Math.cos(sunAngle);
+
+            sunLight.position.set(sunX * 1500, sunY * 1000, 1000); // Adjust Z for angled light
+            sunLight.target.position.set(0, 0, 0); // Keep light focused on the center
+
+            // Adjust light intensity and colors based on sun angle
+            if (sunY > 0) { // Daytime
+                const intensity = Math.max(0.1, sunY) * 1.5; // Brighter during day, min intensity
+                sunLight.intensity = intensity;
+                skyLight.intensity = Math.max(0.2, sunY * 0.6); // Ambient light stronger during day
+                sunLight.color.setHSL(0.1, 1, Math.max(0.5, sunY)); // Yellowish sun
+                skyLight.color.setHSL(0.6, 0.6, Math.max(0.3, sunY * 0.7)); // Bluish sky
+                scene.fog.color.setHSL(0.6, 0.3, Math.max(0.6, sunY * 0.8)); // Lighter fog
+                scene.fog.near = 1000 + (1-sunY) * 2000; // Fog denser near horizon at dawn/dusk
+                scene.fog.far = 15000 - (1-sunY) * 5000;
+                renderer.setClearColor(skyLight.color); // Match background to sky
+            } else { // Nighttime
+                sunLight.intensity = 0; // Sun off
+                skyLight.intensity = 0.1 + Math.abs(sunY) * 0.1; // Dim ambient from moon/stars
+                skyLight.color.setHSL(0.6, 0.3, 0.1); // Dark blue night sky
+                scene.fog.color.setHSL(0.6, 0.1, 0.05); // Darker fog
+                scene.fog.near = 500;
+                scene.fog.far = 8000;
+                 renderer.setClearColor(0x000011); // Dark night background
+            }
+             // Moon (could be another light source or just affect ambient)
+             // For simplicity, we are just using the skyLight for night ambient
+        }
+
+
+        function checkCollisions() {
+            // Guard against playerAircraft not being ready or not being a group with children yet
+            if (!playerAircraft || !playerAircraft.isGroup || !playerAircraft.children || playerAircraft.children.length === 0) {
+                return false; // Not ready to check collisions
+            }
+    
+            // Note: Computing bounding box every frame can be slow for complex models.
+            // Consider optimizing this later if needed.
+            const playerBox = new THREE.Box3().setFromObject(playerAircraft);
+            isColliding = false; // Reset collision state
+
+            for (const buildingBox of buildingBoundingBoxes) {
+                if (playerBox.intersectsBox(buildingBox)) {
+                    // --- Collision Response ---
+                    // Simple response: Stop movement towards the building
+                    isColliding = true;
+
+                    // Find collision normal (approximate)
+                    const playerCenter = new THREE.Vector3();
+                    playerBox.getCenter(playerCenter);
+                    const buildingCenter = new THREE.Vector3();
+                    buildingBox.getCenter(buildingCenter);
+
+                    const collisionNormal = playerCenter.sub(buildingCenter).normalize();
+
+                    // Reflect velocity (basic bounce) - needs refinement for better feel
+                    const speed = playerVelocity.length();
+                    if (speed > 1.0) { // Only reflect if moving significantly
+                        playerVelocity.reflect(collisionNormal).multiplyScalar(0.5); // Lose half speed on impact
+                    } else {
+                        playerVelocity.set(0,0,0); // Stop if moving slowly
+                    }
+
+                     // Push player slightly out of the building to prevent sticking
+                    const pushOut = collisionNormal.multiplyScalar(1.0);
+                    playerAircraft.position.add(pushOut);
+
+                    // Maybe add visual/audio feedback for collision here
+
+                    // For this simple check, stop after first collision found in a frame
+                    break;
+                }
+            }
+
+            // Traverse the playerAircraft group to find meshes and modify their materials' emissive property
+            playerAircraft.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    // Handle both single material and array of materials
+                    const materials = Array.isArray(child.material) ? child.material : [child.material];
+
+                    materials.forEach(mat => {
+                        // Check if the material type supports emissive (like Standard or Physical)
+                        if (mat.isMeshStandardMaterial || mat.isMeshPhysicalMaterial) {
+                            // Set emissive color based on collision state
+                            // Use a brighter red for collision, black (no emission) otherwise
+                            // Note: This assumes the base color is handled by the model's texture/material.
+                            // If the loaded model isn't red, this will just add/remove a red glow.
+                            mat.emissive.setHex(isColliding ? 0xaa0000 : 0x000000);
+                        }
+                    });
+                }
+            });
+
+            return isColliding;
+        }
+
+
+        function sendPlayerUpdate() {
+            if (!playerAircraft || !playerId) return;
+
+            const data = {
+                position: playerAircraft.position.toArray(),
+                quaternion: playerAircraft.quaternion.toArray(),
+                // Optional: Send velocity, boost state etc. if needed server-side
+                // velocity: playerVelocity.toArray(),
+                // boosting: controls.boost === 1
+            };
+
+            const message = {
+                type: 'player_update',
+                id: playerId, // Send own ID
+                data: data
+            };
+
+            try {
+                ws.send(JSON.stringify(message));
+            } catch (error) {
+                 console.error("Failed to send update:", error);
+            }
+        }
+
+        function updateInfoPanel() {
+            const speedKmh = playerVelocity.length() * 3.6; // Example conversion factor
+            const altitude = playerAircraft.position.y;
+            document.getElementById('speed').textContent = speedKmh.toFixed(0);
+            document.getElementById('altitude').textContent = altitude.toFixed(1);
+            // Player count updated in WebSocket handlers
+        }
+
+         function updatePlayerCount() {
+            document.getElementById('players-count').textContent = otherPlayers.size + 1; // +1 for self
+        }
+
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- Start the game ---
+        init();
