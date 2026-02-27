@@ -1,4 +1,6 @@
 
+import { createPost, getPosts, getPost, updatePost, deletePost } from './board.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- Firebase & Other Configs ---
     const firebaseConfig = {
@@ -28,7 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeToggle = document.getElementById('theme-toggle');
     const musicToggle = document.getElementById('music-toggle');
     const navLinks = document.querySelectorAll('nav a');
+    const sideNavLinks = document.querySelectorAll('.side-nav a');
     const sections = document.querySelectorAll('main section');
+    const content = document.querySelector('.content');
 
     // --- Page Specific Elements ---
     const lottoButtons = document.querySelectorAll('.lotto-button');
@@ -102,23 +106,85 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- SPA Navigation ---
-    const showSection = (id) => sections.forEach(s => s.classList.toggle('active', s.id === id));
+    const showSection = (id) => {
+        sections.forEach(s => s.classList.remove('active'));
+        const section = document.getElementById(id);
+        if (section) {
+            section.classList.add('active');
+        } else {
+            content.innerHTML = ''; // Clear content for board sections
+            loadBoard(id);
+        }
+    }
     const handleHashChange = () => {
         const hash = window.location.hash.substring(1) || 'home';
         showSection(hash);
         navLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href').substring(1) === hash));
+        sideNavLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href').substring(1) === hash));
+
         // Lazy load section content
         if (hash === 'calendar') initializeCalendar();
         if (hash === 'gallery') loadAndDisplayImages();
         if (hash === 'info') loadAndDisplayLinks();
         if (hash === 'recommendation') loadAndDisplayRecommendations();
     };
-    navLinks.forEach(link => link.addEventListener('click', (e) => {
-        e.preventDefault();
-        window.location.hash = link.getAttribute('href').substring(1);
-    }));
+
+    [...navLinks, ...sideNavLinks].forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.hash = link.getAttribute('href').substring(1);
+        });
+    });
+
     window.addEventListener('hashchange', handleHashChange);
     handleHashChange(); // Initial page load
+
+    // --- Board (To Do, Shopping, Recipes) Logic ---
+    async function loadBoard(boardType) {
+        const posts = await getPosts(boardType);
+        let postsHtml = '<button id="write-button">Write</button><ul class="post-list">';
+        posts.forEach(post => {
+            postsHtml += `
+                <li class="post-item" data-id="${post.id}">
+                    <a href="#${boardType}/${post.id}">${post.title}</a>
+                    <span class="post-meta">${post.author} | ${post.createdAt.toDate().toLocaleDateString()}</span>
+                </li>
+            `;
+        });
+        postsHtml += '</ul>';
+        content.innerHTML = `<h2>${boardType.charAt(0).toUpperCase() + boardType.slice(1)}</h2>${postsHtml}`;
+
+        document.getElementById('write-button').addEventListener('click', () => {
+            showWriteForm(boardType);
+        });
+    }
+
+    function showWriteForm(boardType) {
+        content.innerHTML = `
+            <h2>Write a new post</h2>
+            <form id="write-form">
+                <div class="form-group">
+                    <label for="post-title">Title</label>
+                    <input type="text" id="post-title" required>
+                </div>
+                <div class="form-group">
+                    <label for="post-content">Content</label>
+                    <textarea id="post-content" rows="10" required></textarea>
+                </div>
+                <button type="submit">Submit</button>
+            </form>
+        `;
+
+        document.getElementById('write-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('post-title').value;
+            const postContent = document.getElementById('post-content').value;
+            const newPostId = await createPost(boardType, title, postContent);
+            if (newPostId) {
+                window.location.hash = `#${boardType}`;
+            }
+        });
+    }
 
     // --- Calendar ---
     let calendar;
