@@ -131,65 +131,75 @@
         
         <section id="recommendation">
             <h2>Recommendations</h2>
-            <div id="add-recommendation-form-container">
-                <h3>Add a New Recommendation</h3>
-                <form id="add-recommendation-form">
-                    <div class="form-group">
-                        <label for="recommendation-category">Category:</label>
-                        <select id="recommendation-category" required>
-                            <option value="book">Book</option>
-                            <option value="music">Music</option>
-                            <option value="movie">Movie</option>
-                        </select>
-                    </div>
+            <button id="open-recommendation-modal">Add Recommendation</button>
+            <div id="recommendation-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close-button">&times;</span>
+                    <form id="add-recommendation-form">
+                        <h3>Add a New Recommendation</h3>
+                        <div class="form-group">
+                            <label for="recommendation-category">Category:</label>
+                            <select id="recommendation-category" required>
+                                <option value="book">Book</option>
+                                <option value="music">Music</option>
+                                <option value="movie">Movie</option>
+                            </select>
+                        </div>
 
-                    <div class="form-group">
-                        <label for="recommendation-title">Title:</label>
-                        <input type="text" id="recommendation-title" required>
-                    </div>
+                        <div class="form-group">
+                            <label for="recommendation-title">Title:</label>
+                            <input type="text" id="recommendation-title" required>
+                        </div>
 
-                    <div class="form-group movie-field">
-                        <label for="recommendation-date">Date:</label>
-                        <input type="date" id="recommendation-date">
-                    </div>
-                    <div class="form-group movie-field">
-                        <label for="recommendation-name">Name:</label>
-                        <select id="recommendation-name">
-                            <option value="Seonyul">Seonyul</option>
-                            <option value="Soyul">Soyul</option>
-                            <option value="Siyul">Siyul</option>
-                        </select>
-                    </div>
+                        <div class="form-group movie-field">
+                            <label for="recommendation-date">Date:</label>
+                            <input type="date" id="recommendation-date">
+                        </div>
+                        <div class="form-group movie-field">
+                            <label for="recommendation-name">Name:</label>
+                            <select id="recommendation-name">
+                                <option value="Seonyul">Seonyul</option>
+                                <option value="Soyul">Soyul</option>
+                                <option value="Siyul">Siyul</option>
+                            </select>
+                        </div>
 
-                    <div class="form-group book-music-field" id="recommendation-field1-group">
-                        <label for="recommendation-field1" id="recommendation-field1-label">Author:</label>
-                        <input type="text" id="recommendation-field1">
-                    </div>
-                    <div class="form-group book-music-field" id="recommendation-field2-group">
-                        <label for="recommendation-field2">Comment:</label>
-                        <textarea id="recommendation-field2" rows="3"></textarea>
-                    </div>
+                        <div class="form-group book-music-field" id="recommendation-field1-group">
+                            <label for="recommendation-field1" id="recommendation-field1-label">Author:</label>
+                            <input type="text" id="recommendation-field1">
+                        </div>
+                        <div class="form-group book-music-field" id="recommendation-field2-group">
+                            <label for="recommendation-field2">Comment:</label>
+                            <textarea id="recommendation-field2" rows="3"></textarea>
+                        </div>
 
-                    <button type="submit" id="add-recommendation-button">Add Recommendation</button>
-                </form>
+                        <button type="submit" id="add-recommendation-button">Add Recommendation</button>
+                    </form>
+                </div>
             </div>
             <div class="recommendations-container">
                 <div class="recommendation-category-container">
                     <h3>Books</h3>
-                    <div id="book-list" class="recommendation-list"></div>
+                    <div id="book-list" class="recommendation-list">
+                        <div class="recommendation-item">Content of the recommendation</div>
+                    </div>
                 </div>
                 <div class="recommendation-category-container">
                     <h3>Music</h3>
-                    <div id="music-list" class="recommendation-list"></div>
+                    <div id="music-list" class="recommendation-list">
+                        <div class="recommendation-item">Content of the recommendation</div>
+                    </div>
                 </div>
                 <div class="recommendation-category-container">
                     <h3>Movies</h3>
-                    <div id="movie-list" class="recommendation-list"></div>
+                    <div id="movie-list" class="recommendation-list">
+                        <div class="recommendation-item">Content of the recommendation</div>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <div id="recommendation-modal" class="modal">
+        <div id="recommendation-details-modal" class="modal">
             <div class="modal-content">
                 <span class="close-button">&times;</span>
                 <h3 id="recommendation-modal-title"></h3>

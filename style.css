@@ -162,7 +162,7 @@ section#home {
     margin-top: 0;
     color: var(--secondary-color);
 }
-.lotto-button, #upload-button, #add-link-button, form button {
+.lotto-button, #upload-button, #add-link-button, form button, #open-recommendation-modal {
     background-color: var(--primary-color);
     color: white;
     border: none;
@@ -173,7 +173,7 @@ section#home {
     font-family: 'Nanum Pen Script', sans-serif;
     transition: background-color 0.3s, transform 0.2s;
 }
-.lotto-button:hover, #upload-button:hover, #add-link-button:hover, form button:hover {
+.lotto-button:hover, #upload-button:hover, #add-link-button:hover, form button:hover, #open-recommendation-modal:hover {
     background-color: #0056b3;
     transform: translateY(-1px);
 }
@@ -278,7 +278,7 @@ section#home {
 }
 
 
-#add-link-form-container, footer #contact, #add-recommendation-form-container {
+#add-link-form-container, footer #contact {
     max-width: 600px;
     margin: 40px auto; 
 }
@@ -321,6 +321,9 @@ section#home {
     padding: 15px;
     box-shadow: 0 2px 4px var(--shadow-color);
     min-width: 300px; /* Minimum width before wrapping */
+}
+.recommendation-category-container h3 {
+    font-size: 1.5rem;
 }
 .recommendation-list {
     display: grid;
@@ -462,11 +465,36 @@ footer {
     margin: auto;
     display: block;
     position: relative;
+    background-color: var(--card-background);
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 500px;
+}
+
+.close-button {
+    color: var(--secondary-color);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    header nav {
+        display: none;
+    }
     .info-panel, .score-panel, .controls-guide {
         font-size: 12px;
+    }
+    .recommendations-container {
+        flex-direction: column;
     }
 }
